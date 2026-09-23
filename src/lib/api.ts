@@ -1,8 +1,16 @@
 // Central REST API Client for ROLEX Operations Backend
 
-const API_BASE_URL =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
-  "http://localhost:8000";
+function resolveApiBaseUrl(): string {
+  const envUrl = typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_URL : undefined;
+  if (!envUrl) return "http://localhost:8000";
+  const trimmed = envUrl.trim().replace(/\/+$/, "");
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 function getAuthHeader(): Record<string, string> {
   const token = typeof window !== "undefined" ? localStorage.getItem("rolex_auth_token") : null;

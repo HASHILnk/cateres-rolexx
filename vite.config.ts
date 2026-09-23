@@ -12,4 +12,18 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    preview: {
+      allowedHosts: [
+        "rolex-frontend.onrender.com",
+        ".onrender.com",
+      ],
+    },
+    server: {
+      allowedHosts: [
+        "rolex-frontend.onrender.com",
+        ".onrender.com",
+      ],
+    },
+  },
 });
