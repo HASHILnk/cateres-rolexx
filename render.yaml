@@ -1,0 +1,41 @@
+services:
+  # 1. ROLEX FastAPI Backend Web Service
+  - type: web
+    name: rolex-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rolex-db
+          property: connectionString
+
+  # 2. ROLEX Frontend Web Service
+  - type: web
+    name: rolex-frontend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: bun install && bun run build
+    startCommand: bun run preview -- --port $PORT --host 0.0.0.0
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: rolex-backend
+          property: host
+
+databases:
+  # Managed PostgreSQL Database for ROLEX Operations
+  - name: rolex-db
+    databaseName: rolex
+    user: rolex_admin
+    region: oregon
+    plan: free
