@@ -2,7 +2,19 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import AdminUser
+from ..models import (
+    AdminUser,
+    Client,
+    CateringEvent,
+    ReadinessItem,
+    MenuCourseItem,
+    StockItem,
+    StockAllocation,
+    EventExpense,
+    Quotation,
+    QuotationLineItem,
+    Transaction,
+)
 from ..schemas import AdminCreate, AdminUpdatePassword, AdminResponse
 from ..auth import hash_password, get_current_admin
 
@@ -90,3 +102,27 @@ def delete_admin(
     db.delete(admin)
     db.commit()
     return {"message": f"Administrator '{admin.username}' removed successfully"}
+
+
+@router.post("/empty-data")
+def empty_operational_data(
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin),
+):
+    """
+    Clears all operational records (clients, events, stock, quotations, transactions)
+    Keeps database tables, administrator accounts, and business profile.
+    """
+    db.query(QuotationLineItem).delete()
+    db.query(Quotation).delete()
+    db.query(EventExpense).delete()
+    db.query(StockAllocation).delete()
+    db.query(ReadinessItem).delete()
+    db.query(MenuCourseItem).delete()
+    db.query(CateringEvent).delete()
+    db.query(Client).delete()
+    db.query(StockItem).delete()
+    db.query(Transaction).delete()
+    db.commit()
+
+    return {"message": "All operational database records emptied successfully. Tables and Admin intact."}

@@ -103,6 +103,10 @@ export const api = {
       request<{ message: string }>(`/api/admins/${id}`, {
         method: "DELETE",
       }),
+    emptyData: () =>
+      request<{ message: string }>("/api/admins/empty-data", {
+        method: "POST",
+      }),
   },
 
   // Clients

@@ -56,7 +56,7 @@ interface AdminRecord {
 type SettingsTab = "admins" | "profile" | "templates" | "system";
 
 function SettingsPage() {
-  const { profile, updateProfile, resetToInitialData } = useOperations();
+  const { profile, updateProfile, resetToInitialData, emptyDatabaseData } = useOperations();
   const { admin: currentLoggedInAdmin } = useAuth();
 
   // Active tab state
@@ -209,14 +209,23 @@ function SettingsPage() {
     }
   };
 
-  const handleReset = () => {
+  const [isClearingData, setIsClearingData] = useState(false);
+
+  const handleEmptyData = async () => {
     if (
       window.confirm(
-        "Are you sure you want to restore the default sample events, stock items, and client records?"
+        "Are you sure you want to empty all operational data (events, clients, stock, quotations, transactions)? Database tables and your Administrator login will NOT be deleted."
       )
     ) {
-      resetToInitialData();
-      toast.info("Database reset to luxury banquet demonstration state.");
+      setIsClearingData(true);
+      try {
+        await emptyDatabaseData();
+        toast.success("Database operational records emptied successfully. You can now add your own data!");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to empty database");
+      } finally {
+        setIsClearingData(false);
+      }
     }
   };
 
@@ -671,19 +680,29 @@ function SettingsPage() {
 
                 <div className="p-4 rounded-xl border border-red-200 bg-red-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h4 className="font-semibold text-xs text-red-900">Reset Demo Data</h4>
+                    <h4 className="font-semibold text-xs text-red-900">Empty Operational Data</h4>
                     <p className="text-[11px] text-red-700/80 mt-0.5">
-                      Restores default banquet events, stock equipment, and sample client records.
+                      Permanently wipes all events, clients, stock items, quotations, and transactions from the database so you can enter your own real data from scratch. Administrator accounts and settings are preserved.
                     </p>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={handleReset}
-                    className="text-xs text-red-700 border-red-200 hover:bg-red-100 bg-white gap-1.5 cursor-pointer rounded-xl h-9 self-start sm:self-auto shrink-0"
+                    disabled={isClearingData}
+                    onClick={handleEmptyData}
+                    className="text-xs text-red-700 border-red-200 hover:bg-red-100 bg-white gap-1.5 cursor-pointer rounded-xl h-9 self-start sm:self-auto shrink-0 font-medium"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Restore Sample Data</span>
+                    {isClearingData ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Emptying Database...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Empty Database Data</span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>

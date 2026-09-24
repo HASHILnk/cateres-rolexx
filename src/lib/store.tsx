@@ -102,6 +102,7 @@ interface OperationsContextType {
   // Profile Actions
   updateProfile: (updates: Partial<BusinessProfile>) => void;
   resetToInitialData: () => void;
+  emptyDatabaseData: () => Promise<void>;
 }
 
 const OperationsContext = createContext<OperationsContextType | undefined>(
@@ -118,16 +119,12 @@ const STORAGE_KEYS = {
 };
 
 export function OperationsProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useState<CateringEvent[]>(initialEvents);
-  const [stock, setStock] = useState<StockItem[]>(initialStockItems);
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [quotations, setQuotations] =
-    useState<Quotation[]>(initialQuotations);
-  const [transactions, setTransactions] =
-    useState<Transaction[]>(initialTransactions);
-  const [profile, setProfile] = useState<BusinessProfile>(
-    initialBusinessProfile
-  );
+  const [events, setEvents] = useState<CateringEvent[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [profile, setProfile] = useState<BusinessProfile>(initialBusinessProfile);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Client-side hydration from localStorage followed by backend API sync
@@ -168,7 +165,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
             api.profile.get(),
           ]);
 
-        if (liveClients.status === "fulfilled" && Array.isArray(liveClients.value) && liveClients.value.length > 0) {
+        if (liveClients.status === "fulfilled" && Array.isArray(liveClients.value)) {
           const mappedClients: Client[] = liveClients.value.map((c: any) => ({
             id: c.id,
             name: c.name,
@@ -185,7 +182,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
           setClients(mappedClients);
         }
 
-        if (liveStock.status === "fulfilled" && Array.isArray(liveStock.value) && liveStock.value.length > 0) {
+        if (liveStock.status === "fulfilled" && Array.isArray(liveStock.value)) {
           const mappedStock: StockItem[] = liveStock.value.map((s: any) => ({
             id: s.id,
             name: s.name,
@@ -200,7 +197,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
           setStock(mappedStock);
         }
 
-        if (liveEvents.status === "fulfilled" && Array.isArray(liveEvents.value) && liveEvents.value.length > 0) {
+        if (liveEvents.status === "fulfilled" && Array.isArray(liveEvents.value)) {
           const mappedEvents: CateringEvent[] = liveEvents.value.map((e: any) => ({
             id: e.id,
             title: e.title,
@@ -253,11 +250,11 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
           setEvents(mappedEvents);
         }
 
-        if (liveQuotations.status === "fulfilled" && Array.isArray(liveQuotations.value) && liveQuotations.value.length > 0) {
+        if (liveQuotations.status === "fulfilled" && Array.isArray(liveQuotations.value)) {
           setQuotations(liveQuotations.value);
         }
 
-        if (liveTransactions.status === "fulfilled" && Array.isArray(liveTransactions.value) && liveTransactions.value.length > 0) {
+        if (liveTransactions.status === "fulfilled" && Array.isArray(liveTransactions.value)) {
           setTransactions(liveTransactions.value);
         }
 
@@ -797,6 +794,24 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     api.profile.update(p).catch((err) => console.warn("Could not sync profile update to API:", err));
   };
 
+  const emptyDatabaseData = async () => {
+    setEvents([]);
+    setStock([]);
+    setClients([]);
+    setQuotations([]);
+    setTransactions([]);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.EVENTS);
+      localStorage.removeItem(STORAGE_KEYS.STOCK);
+      localStorage.removeItem(STORAGE_KEYS.CLIENTS);
+      localStorage.removeItem(STORAGE_KEYS.QUOTATIONS);
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    } catch (e) {
+      console.warn("Failed to clear localStorage", e);
+    }
+    await api.admins.emptyData();
+  };
+
   const resetToInitialData = () => {
     setEvents(initialEvents);
     setStock(initialStockItems);
@@ -848,6 +863,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         addTransaction,
         updateProfile,
         resetToInitialData,
+        emptyDatabaseData,
       }}
     >
       {children}
