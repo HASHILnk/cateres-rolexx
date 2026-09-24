@@ -2,12 +2,30 @@
 
 function resolveApiBaseUrl(): string {
   const envUrl = typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_URL : undefined;
-  if (!envUrl) return "http://localhost:8000";
-  const trimmed = envUrl.trim().replace(/\/+$/, "");
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
+
+  // 1. If an explicit external domain with a dot is provided (e.g. https://rolex-backend-xxxx.onrender.com)
+  if (envUrl) {
+    const trimmed = envUrl.trim().replace(/\/+$/, "");
+    if (trimmed.includes(".") || trimmed.includes("localhost")) {
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed;
+      }
+      return `https://${trimmed}`;
+    }
   }
-  return `https://${trimmed}`;
+
+  // 2. If running locally in development browser
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000";
+    }
+    // 3. In production on Render, return "" (relative URL)
+    // Requests like /api/auth/login are reverse-proxied internally by the frontend server
+    return "";
+  }
+
+  return "http://localhost:8000";
 }
 
 const API_BASE_URL = resolveApiBaseUrl();

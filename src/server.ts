@@ -47,6 +47,52 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+
+      // Reverse proxy /api requests to internal backend service on Render or local backend
+      if (url.pathname.startsWith("/api/")) {
+        const rawTarget =
+          process.env.BACKEND_INTERNAL_URL ||
+          (process.env.VITE_API_URL && !process.env.VITE_API_URL.includes(".")
+            ? `${process.env.VITE_API_URL}:10000`
+            : "127.0.0.1:8000");
+
+        const backendBase = rawTarget.startsWith("http://") || rawTarget.startsWith("https://")
+          ? rawTarget
+          : `http://${rawTarget}`;
+
+        const targetUrl = `${backendBase.replace(/\/+$/, "")}${url.pathname}${url.search}`;
+
+        const headers = new Headers();
+        for (const [key, value] of request.headers.entries()) {
+          if (key.toLowerCase() !== "host") {
+            headers.set(key, value);
+          }
+        }
+
+        const body =
+          request.method !== "GET" && request.method !== "HEAD"
+            ? await request.arrayBuffer()
+            : undefined;
+
+        try {
+          return await fetch(targetUrl, {
+            method: request.method,
+            headers,
+            body,
+          });
+        } catch (proxyError) {
+          console.error("Failed to proxy API request to:", targetUrl, proxyError);
+          return new Response(
+            JSON.stringify({ detail: `Proxy Error connecting to backend: ${proxyError}` }),
+            {
+              status: 502,
+              headers: { "content-type": "application/json" },
+            },
+          );
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
