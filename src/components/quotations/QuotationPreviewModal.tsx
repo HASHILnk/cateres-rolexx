@@ -14,6 +14,8 @@ import { BrandLogo } from "../common/BrandLogo";
 import { Printer, MessageCircle, Check, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+import { RolexQuotationDocument } from "./RolexQuotationDocument";
+
 interface QuotationPreviewModalProps {
   quotation: Quotation | null;
   open: boolean;
@@ -25,9 +27,36 @@ export function QuotationPreviewModal({
   open,
   onOpenChange,
 }: QuotationPreviewModalProps) {
-  const { profile, updateQuotationStatus } = useOperations();
+  const { profile, updateQuotationStatus, events } = useOperations();
 
   if (!quotation) return null;
+
+  const linkedEvent = events.find((e) => e.id === quotation.eventId);
+
+  const sections = React.useMemo(() => {
+    if (!quotation.items || quotation.items.length === 0) {
+      return [
+        {
+          name: "Banquet Feast & Hospitality Setup",
+          category: "Main Course",
+          items: ["Royal Catering Feast", "Chafing Dishes & Tableware", "Hospitality Service Staff"],
+        },
+      ];
+    }
+
+    const map = new Map<string, string[]>();
+    for (const it of quotation.items) {
+      const cat = it.category || "Banquet Inclusions";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(it.description || "Banquet Item");
+    }
+
+    return Array.from(map.entries()).map(([cat, items]) => ({
+      name: cat,
+      category: cat,
+      items,
+    }));
+  }, [quotation.items]);
 
   const handlePrint = () => {
     window.print();
@@ -40,19 +69,8 @@ export function QuotationPreviewModal({
         `Official Quotation: *${quotation.quotationNumber || "QTN"}*\n` +
         `------------------------------------\n` +
         `Dear *${quotation.clientName || "Valued Client"}*,\n\n` +
-        `Here is the quotation for *${quotation.eventTitle || "Catering Event"}*:\n` +
+        `Here is your catering estimate for *${quotation.eventTitle || "Catering Event"}*:\n` +
         `Date: ${quotation.date || "-"}\n\n` +
-        `*Breakdown:*\n` +
-        (quotation.items || [])
-          .map(
-            (i) =>
-              `• ${i.description || "Item"} (x${i.qty || 1}) — ₹${(i.amount || 0).toLocaleString()}`
-          )
-          .join("\n") +
-        `\n\n` +
-        `Subtotal: ₹${(quotation.subtotal || 0).toLocaleString()}\n` +
-        `Discount: ${quotation.discountPercentage || 0}%\n` +
-        `GST (${quotation.taxPercentage || 5}%): Included\n` +
         `*Grand Total: ₹${(quotation.total || 0).toLocaleString()}*\n\n` +
         `Validity: Until ${quotation.validUntil || "-"}\n` +
         `Warm regards,\n` +
@@ -75,8 +93,8 @@ export function QuotationPreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden border-border shadow-2xl print:border-none print:shadow-none">
-        <DialogHeader className="p-4 border-b border-border/60 bg-muted/30 flex flex-row items-center justify-between no-print">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden border-[#E8E4DC] bg-[#FAF6EE] shadow-2xl print:border-none print:shadow-none">
+        <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between no-print sticky top-0 z-20">
           <DialogTitle className="text-base font-semibold flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#C5A059]" />
             Quotation Preview — {quotation.quotationNumber}
@@ -96,175 +114,22 @@ export function QuotationPreviewModal({
         </DialogHeader>
 
         {/* PRINTABLE INVOICE BODY */}
-        <div className="p-8 max-h-[70vh] overflow-y-auto space-y-6 bg-card print:p-0 print:max-h-none print:overflow-visible">
-          {/* Top Brand Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-6">
-            <div>
-              <BrandLogo size="md" />
-              <p className="text-xs text-muted-foreground mt-2 max-w-sm">
-                {profile.address} • Phone: {profile.phone}
-              </p>
-              <p className="text-xs font-medium text-foreground">
-                GSTIN: {profile.gstNumber}
-              </p>
-            </div>
-
-            <div className="text-left sm:text-right space-y-1">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Official Estimate / Quotation
-              </div>
-              <div className="text-xl font-bold font-serif text-[#8F702F] dark:text-[#E0BA6E]">
-                {quotation.quotationNumber}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Issued: {quotation.date}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Valid Until: {quotation.validUntil}
-              </div>
-            </div>
-          </div>
-
-          {/* Client & Event Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/30 border border-border/60 text-xs">
-            <div>
-              <div className="text-muted-foreground uppercase font-semibold text-[10px] tracking-wider mb-1">
-                Billed To:
-              </div>
-              <div className="font-bold text-sm text-foreground">
-                {quotation.clientName}
-              </div>
-              <div className="text-muted-foreground">{quotation.clientPhone}</div>
-              {quotation.clientEmail && (
-                <div className="text-muted-foreground">
-                  {quotation.clientEmail}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="text-muted-foreground uppercase font-semibold text-[10px] tracking-wider mb-1">
-                Event Occasion:
-              </div>
-              <div className="font-bold text-sm text-foreground">
-                {quotation.eventTitle}
-              </div>
-              <div className="text-muted-foreground">
-                Catering Service Package
-              </div>
-            </div>
-          </div>
-
-          {/* Itemized Table */}
-          <div className="border border-border/60 rounded-lg overflow-hidden">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-muted text-muted-foreground font-semibold border-b border-border/60">
-                <tr>
-                  <th className="p-3">#</th>
-                  <th className="p-3">Description</th>
-                  <th className="p-3 text-right">Qty</th>
-                  <th className="p-3 text-right">Rate (₹)</th>
-                  <th className="p-3 text-right">Amount (₹)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {(quotation.items || []).map((item, index) => (
-                  <tr key={item.id} className="hover:bg-muted/20">
-                    <td className="p-3 text-muted-foreground">{index + 1}</td>
-                    <td className="p-3 font-medium text-foreground">
-                      {item.description || "Service Item"}
-                      {item.category && (
-                        <span className="block text-[10px] text-muted-foreground font-normal">
-                          {item.category}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-right">{item.qty || 1}</td>
-                    <td className="p-3 text-right">
-                      ₹{(item.unitPrice || 0).toLocaleString()}
-                    </td>
-                    <td className="p-3 text-right font-semibold">
-                      ₹{(item.amount || 0).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Totals Section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pt-2">
-            <div className="text-xs text-muted-foreground max-w-sm space-y-1">
-              <div className="font-semibold text-foreground text-[11px]">
-                Terms & Conditions:
-              </div>
-              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                {(profile.quotationTerms || []).slice(0, 3).map((term, i) => (
-                  <li key={i}>{term}</li>
-                ))}
-              </ul>
-              {quotation.notes && (
-                <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded text-[11px] text-amber-900 dark:text-amber-200 mt-2">
-                  <strong>Special Note:</strong> {quotation.notes}
-                </div>
-              )}
-            </div>
-
-            <div className="w-full sm:w-64 space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b border-border/40">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">
-                  ₹{(quotation.subtotal || 0).toLocaleString()}
-                </span>
-              </div>
-              {quotation.discountPercentage > 0 && (
-                <div className="flex justify-between py-1 border-b border-border/40 text-emerald-600 dark:text-emerald-400">
-                  <span>Discount ({quotation.discountPercentage}%)</span>
-                  <span>
-                    -₹
-                    {(
-                      (quotation.subtotal * quotation.discountPercentage) /
-                      100
-                    ).toLocaleString()}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between py-1 border-b border-border/40">
-                <span className="text-muted-foreground">
-                  GST ({quotation.taxPercentage}%)
-                </span>
-                <span>
-                  ₹
-                  {(
-                    ((quotation.subtotal *
-                      (100 - quotation.discountPercentage)) /
-                      100) *
-                    (quotation.taxPercentage / 100)
-                  ).toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between py-2 font-bold text-sm bg-muted/40 p-2 rounded text-foreground">
-                <span className="font-serif">Grand Total</span>
-                <span className="text-[#8F702F] dark:text-[#E0BA6E]">
-                  ₹{quotation.total.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Signature Block */}
-          <div className="pt-8 border-t border-border/60 flex justify-between items-end text-xs text-muted-foreground">
-            <div>
-              <p>For ROLEX Events & Caterers</p>
-              <div className="mt-8 border-b border-border/80 w-36" />
-              <p className="mt-1">Authorized Signatory</p>
-            </div>
-            <div className="text-right">
-              <p>Client Acceptance</p>
-              <div className="mt-8 border-b border-border/80 w-36 ml-auto" />
-              <p className="mt-1">Signature & Date</p>
-            </div>
-          </div>
+        <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto bg-[#FAF6EE] print:p-0 print:max-h-none print:overflow-visible">
+          <RolexQuotationDocument
+            clientName={quotation.clientName || linkedEvent?.clientName || "Valued Client"}
+            clientPhone={quotation.clientPhone || linkedEvent?.clientPhone || "+91 XXXXX XXXXX"}
+            eventTitle={quotation.eventTitle || linkedEvent?.title || "Banquet Event"}
+            venue={linkedEvent?.venue || "Bianco Castle, Trivandrum"}
+            eventDate={quotation.date || linkedEvent?.date || "18 Oct 2026"}
+            eventTiming={linkedEvent?.time || "06:00 PM to 11:00 PM"}
+            guestCount={linkedEvent?.guestCount || 1500}
+            serviceType={linkedEvent?.eventType || "Buffet"}
+            sections={sections}
+            grandTotal={quotation.total || 0}
+            quotationRemarks={quotation.notes}
+            quotationNumber={quotation.quotationNumber}
+            dateIssued={quotation.date}
+          />
         </div>
 
         {/* ACTION FOOTER */}

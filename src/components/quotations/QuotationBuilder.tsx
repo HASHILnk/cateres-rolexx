@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { toast } from "sonner";
+import { RolexQuotationDocument } from "./RolexQuotationDocument";
 import {
   ArrowLeft,
   Calendar,
@@ -997,125 +998,21 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
             </Button>
           </div>
 
-          {/* DOCUMENT CARD */}
-          <div className="bg-white border border-[#E8E4DC] rounded-2xl shadow-md overflow-hidden text-xs">
-            {/* Dark & Gold Brand Banner Header */}
-            <div className="bg-[#111215] text-white p-5 sm:p-6 text-center border-b border-[#C9A45C]/40 relative">
-              <BrandLogo size="md" light={true} layout="vertical" />
-              <div className="text-[10px] tracking-[0.25em] text-[#C9A45C] uppercase font-semibold mt-1">
-                Exquisite Culinary Experiences
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-5 space-y-4">
-              {/* Event Metadata 2x3 Grid */}
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 p-3 rounded-xl bg-[#FAF8F5] border border-[#EAE5DC] text-[11px]">
-                <div>
-                  <span className="text-[9px] font-bold text-[#8C7443] uppercase tracking-wider block">
-                    CLIENT
-                  </span>
-                  <span className="font-bold text-[#111215] line-clamp-1">
-                    {clientName || "Client"}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-[#8C7443] uppercase tracking-wider block">
-                    EVENT
-                  </span>
-                  <span className="font-bold text-[#111215] line-clamp-1">
-                    {eventTitle || "Occasion"}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-[#8C7443] uppercase tracking-wider block">
-                    DATE
-                  </span>
-                  <span className="font-medium text-[#111215]">
-                    {eventDate || "Date TBD"}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-[#8C7443] uppercase tracking-wider block">
-                    VENUE
-                  </span>
-                  <span className="font-medium text-[#111215] line-clamp-1">
-                    {venue || "Venue TBD"}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-[#8C7443] uppercase tracking-wider block">
-                    GUEST COUNT
-                  </span>
-                  <span className="font-medium text-[#111215]">
-                    {guestCount.toLocaleString()} Pax
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-[#8C7443] uppercase tracking-wider block">
-                    SERVICE TYPE
-                  </span>
-                  <span className="font-medium text-[#111215]">
-                    {serviceType}
-                  </span>
-                </div>
-              </div>
-
-              {/* Menu Highlights List */}
-              <div className="space-y-2">
-                <div className="text-[10px] font-bold text-[#8C7443] uppercase tracking-wider border-b border-[#EAE5DC] pb-1">
-                  MENU HIGHLIGHTS
-                </div>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[11px]">
-                  {sections.slice(0, 10).map((sec) => (
-                    <div key={sec.id} className="flex items-center gap-1.5 truncate">
-                      <span className="text-[#C9A45C] text-xs">•</span>
-                      <span className="text-[#111215] font-medium truncate">
-                        {sec.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {sections.length > 10 && (
-                  <p className="text-[10px] text-[#70757F] italic pt-1">
-                    + {sections.length - 10} additional service & setup inclusions
-                  </p>
-                )}
-              </div>
-
-              {/* Total Box */}
-              <div className="bg-[#111215] text-white rounded-xl p-4 text-center border border-[#C9A45C]/40 space-y-1">
-                <span className="text-[9px] font-bold text-[#C9A45C] uppercase tracking-[0.15em] block">
-                  TOTAL QUOTATION AMOUNT (INR)
-                </span>
-                <div className="font-serif text-2xl sm:text-3xl font-bold text-[#EEDBBD]">
-                  ₹ {grandTotal.toLocaleString("en-IN")} /-
-                </div>
-                <div className="text-[10px] text-neutral-300">
-                  For {guestCount.toLocaleString()} Pax • {sections.length} Menu Sections • Full Service Setup
-                </div>
-              </div>
-
-              {/* Amount in words */}
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EAE5DC] text-[10px] space-y-0.5">
-                <span className="font-bold text-[#8C7443] block">Amount in Words:</span>
-                <span className="text-[#111215] italic">
-                  {numberToIndianWords(grandTotal)}
-                </span>
-              </div>
-
-              {/* Remarks */}
-              {quotationRemarks && (
-                <div className="text-[10px] text-[#70757F] border-t border-[#F0EDE6] pt-2">
-                  <span className="font-semibold text-[#111215]">Quotation Remarks: </span>
-                  {quotationRemarks}
-                </div>
-              )}
-            </div>
+          {/* EXACT REFERENCE QUOTATION DOCUMENT */}
+          <div className="max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl shadow-sm border border-[#E7DFCE]">
+            <RolexQuotationDocument
+              clientName={clientName}
+              clientPhone={clientPhone}
+              eventTitle={eventTitle}
+              venue={venue}
+              eventDate={eventDate}
+              eventTiming={eventTiming}
+              guestCount={guestCount}
+              serviceType={serviceType}
+              sections={sections}
+              grandTotal={grandTotal}
+              quotationRemarks={quotationRemarks}
+            />
           </div>
         </div>
       </div>
@@ -1312,8 +1209,8 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       {/* MODAL: FULL QUOTATION PREVIEW & PDF EXPORT         */}
       {/* ================================================== */}
       <Dialog open={fullPreviewModalOpen} onOpenChange={setFullPreviewModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border-[#E8E4DC] bg-[#FAF6EE]">
+          <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between sticky top-0 z-20">
             <DialogTitle className="font-serif text-base font-bold text-[#111215] flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#8C7443]" />
               Official Catering Quotation
@@ -1331,84 +1228,20 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
             </div>
           </DialogHeader>
 
-          {/* Printable Proposal Document */}
-          <div className="p-6 sm:p-8 space-y-6 bg-white text-xs text-[#111215]">
-            {/* Header Banner */}
-            <div className="bg-[#111215] text-white p-6 rounded-xl text-center border-b border-[#C9A45C]/40">
-              <BrandLogo size="md" light={true} layout="vertical" />
-              <div className="text-[10px] tracking-[0.25em] text-[#C9A45C] uppercase font-semibold mt-1">
-                Exquisite Culinary Experiences
-              </div>
-              <p className="text-[11px] text-neutral-400 mt-2">
-                Kerala, India • Phone: {profile.phone || "+91 98470 00000"} • GSTIN: {profile.gstNumber || "32AAAAA0000A1Z5"}
-              </p>
-            </div>
-
-            {/* Metadata Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-[#FAF8F5] border border-[#EAE5DC]">
-              <div>
-                <span className="text-[10px] font-bold text-[#8C7443] uppercase block">Client</span>
-                <span className="font-bold text-sm text-[#111215]">{clientName}</span>
-                <span className="text-[11px] text-[#70757F] block">{clientPhone}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-[#8C7443] uppercase block">Event Occasion</span>
-                <span className="font-bold text-sm text-[#111215]">{eventTitle}</span>
-                <span className="text-[11px] text-[#70757F] block">{serviceType}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-[#8C7443] uppercase block">Date & Venue</span>
-                <span className="font-bold text-sm text-[#111215]">{eventDate}</span>
-                <span className="text-[11px] text-[#70757F] block">{venue}</span>
-              </div>
-            </div>
-
-            {/* Detailed Menu Sections */}
-            <div className="space-y-4">
-              <div className="font-serif text-base font-bold text-[#111215] border-b border-[#EAE5DC] pb-1">
-                Curated Banquet Menu & Inclusions ({totalItemsCount} Total Items)
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {sections.map((sec, idx) => (
-                  <div key={sec.id} className="p-3 rounded-lg border border-[#EAE5DC] bg-[#FAF8F5]/60 space-y-1.5">
-                    <div className="font-bold text-xs text-[#8C7443] uppercase tracking-wider flex items-center gap-1.5">
-                      <span>{idx + 1}.</span>
-                      <span>{sec.name}</span>
-                    </div>
-                    <ul className="space-y-1 pl-3 text-[11px] text-[#111215]">
-                      {sec.items.map((it, iIdx) => (
-                        <li key={iIdx} className="list-disc text-[#70757F]">
-                          <span className="text-[#111215]">{it}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Financial Summary */}
-            <div className="bg-[#111215] text-white rounded-xl p-5 text-center border border-[#C9A45C]/40 space-y-1">
-              <span className="text-[10px] font-bold text-[#C9A45C] uppercase tracking-[0.2em] block">
-                TOTAL CONTRACTED AMOUNT (INR)
-              </span>
-              <div className="font-serif text-3xl sm:text-4xl font-bold text-[#EEDBBD]">
-                ₹ {grandTotal.toLocaleString("en-IN")} /-
-              </div>
-              <p className="text-xs text-neutral-300">
-                {numberToIndianWords(grandTotal)}
-              </p>
-            </div>
-
-            {/* Terms & Notes */}
-            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#EAE5DC] space-y-1 text-[11px] text-[#70757F]">
-              <span className="font-bold text-[#111215] block">Terms & Inclusions:</span>
-              <p>{quotationRemarks}</p>
-              <p className="pt-2 text-[10px] text-[#8E94A0]">
-                ROLEX Events & Caterers • Creating Memorable Events, One Celebration at a Time.
-              </p>
-            </div>
+          <div className="p-4 sm:p-6">
+            <RolexQuotationDocument
+              clientName={clientName}
+              clientPhone={clientPhone}
+              eventTitle={eventTitle}
+              venue={venue}
+              eventDate={eventDate}
+              eventTiming={eventTiming}
+              guestCount={guestCount}
+              serviceType={serviceType}
+              sections={sections}
+              grandTotal={grandTotal}
+              quotationRemarks={quotationRemarks}
+            />
           </div>
         </DialogContent>
       </Dialog>
