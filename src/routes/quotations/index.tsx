@@ -75,19 +75,24 @@ function QuotationsPage() {
   ]);
 
   const filteredQuotations = quotations.filter((q) => {
+    const qNum = (q.quotationNumber || "").toLowerCase();
+    const cName = (q.clientName || "").toLowerCase();
+    const eTitle = (q.eventTitle || "").toLowerCase();
+    const qSearch = (search || "").toLowerCase().trim();
     const matchesSearch =
-      q.quotationNumber.toLowerCase().includes(search.toLowerCase()) ||
-      q.clientName.toLowerCase().includes(search.toLowerCase()) ||
-      q.eventTitle.toLowerCase().includes(search.toLowerCase());
+      !qSearch ||
+      qNum.includes(qSearch) ||
+      cName.includes(qSearch) ||
+      eTitle.includes(qSearch);
     const matchesStatus =
       statusFilter === "all" ? true : q.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const totalQuotedValue = quotations.reduce((sum, q) => sum + q.total, 0);
+  const totalQuotedValue = quotations.reduce((sum, q) => sum + (q.total || 0), 0);
   const approvedValue = quotations
     .filter((q) => q.status === "approved")
-    .reduce((sum, q) => sum + q.total, 0);
+    .reduce((sum, q) => sum + (q.total || 0), 0);
 
   const handleEventSelect = (eventId: string) => {
     setSelectedEventId(eventId);
@@ -291,53 +296,65 @@ function QuotationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {filteredQuotations.map((q) => (
-                <tr key={q.id} className="hover:bg-muted/30">
-                  <td className="p-3.5 font-bold font-serif text-sm text-[#8F702F] dark:text-[#E0BA6E]">
-                    {q.quotationNumber}
-                  </td>
-                  <td className="p-3.5">
-                    <div className="font-semibold text-foreground text-sm">
-                      {q.eventTitle}
-                    </div>
-                    <div className="text-muted-foreground text-[11px]">
-                      {q.clientName} • {q.clientPhone}
-                    </div>
-                  </td>
-                  <td className="p-3.5 text-muted-foreground">{q.date}</td>
-                  <td className="p-3.5 text-muted-foreground">{q.validUntil}</td>
-                  <td className="p-3.5">
-                    <Badge
-                      variant="outline"
-                      className={`capitalize text-[10px] font-semibold ${
-                        q.status === "approved"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                          : q.status === "sent"
-                          ? "bg-blue-50 text-blue-700 border-blue-300"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {q.status}
-                    </Badge>
-                  </td>
-                  <td className="p-3.5 text-right font-bold text-sm text-foreground">
-                    ₹{q.total.toLocaleString()}
-                  </td>
-                  <td className="p-3.5 text-right space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setActiveQuotation(q);
-                        setPreviewOpen(true);
-                      }}
-                      className="text-xs h-8"
-                    >
-                      Preview / Print
-                    </Button>
+              {filteredQuotations.length > 0 ? (
+                filteredQuotations.map((q) => (
+                  <tr key={q.id} className="hover:bg-muted/30">
+                    <td className="p-3.5 font-bold font-serif text-sm text-[#8F702F] dark:text-[#E0BA6E]">
+                      {q.quotationNumber || "QTN-001"}
+                    </td>
+                    <td className="p-3.5">
+                      <div className="font-semibold text-foreground text-sm">
+                        {q.eventTitle || "Banquet Event"}
+                      </div>
+                      <div className="text-muted-foreground text-[11px]">
+                        {q.clientName || "Client"} • {q.clientPhone || "No Phone"}
+                      </div>
+                    </td>
+                    <td className="p-3.5 text-muted-foreground">{q.date || "-"}</td>
+                    <td className="p-3.5 text-muted-foreground">{q.validUntil || "-"}</td>
+                    <td className="p-3.5">
+                      <Badge
+                        variant="outline"
+                        className={`capitalize text-[10px] font-semibold ${
+                          q.status === "approved"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                            : q.status === "sent"
+                            ? "bg-blue-50 text-blue-700 border-blue-300"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {q.status || "draft"}
+                      </Badge>
+                    </td>
+                    <td className="p-3.5 text-right font-bold text-sm text-foreground">
+                      ₹{(q.total || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3.5 text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setActiveQuotation(q);
+                          setPreviewOpen(true);
+                        }}
+                        className="text-xs h-8"
+                      >
+                        Preview / Print
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-muted-foreground">
+                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <div className="font-semibold text-foreground text-sm">No Quotations Found</div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Draft your first client quotation using the button above.
+                    </p>
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

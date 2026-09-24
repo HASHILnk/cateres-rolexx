@@ -34,27 +34,27 @@ export function QuotationPreviewModal({
   };
 
   const handleWhatsAppShare = () => {
-    const cleanPhone = quotation.clientPhone.replace(/[^0-9]/g, "");
+    const cleanPhone = (quotation.clientPhone || "").replace(/[^0-9]/g, "");
     const message = encodeURIComponent(
       `*ROLEX EVENTS & CATERERS*\n` +
-        `Official Quotation: *${quotation.quotationNumber}*\n` +
+        `Official Quotation: *${quotation.quotationNumber || "QTN"}*\n` +
         `------------------------------------\n` +
-        `Dear *${quotation.clientName}*,\n\n` +
-        `Here is the quotation for *${quotation.eventTitle}*:\n` +
-        `Date: ${quotation.date}\n\n` +
+        `Dear *${quotation.clientName || "Valued Client"}*,\n\n` +
+        `Here is the quotation for *${quotation.eventTitle || "Catering Event"}*:\n` +
+        `Date: ${quotation.date || "-"}\n\n` +
         `*Breakdown:*\n` +
-        quotation.items
+        (quotation.items || [])
           .map(
             (i) =>
-              `• ${i.description} (x${i.qty}) — ₹${i.amount.toLocaleString()}`
+              `• ${i.description || "Item"} (x${i.qty || 1}) — ₹${(i.amount || 0).toLocaleString()}`
           )
           .join("\n") +
         `\n\n` +
-        `Subtotal: ₹${quotation.subtotal.toLocaleString()}\n` +
-        `Discount: ${quotation.discountPercentage}%\n` +
-        `GST (${quotation.taxPercentage}%): Included\n` +
-        `*Grand Total: ₹${quotation.total.toLocaleString()}*\n\n` +
-        `Validity: Until ${quotation.validUntil}\n` +
+        `Subtotal: ₹${(quotation.subtotal || 0).toLocaleString()}\n` +
+        `Discount: ${quotation.discountPercentage || 0}%\n` +
+        `GST (${quotation.taxPercentage || 5}%): Included\n` +
+        `*Grand Total: ₹${(quotation.total || 0).toLocaleString()}*\n\n` +
+        `Validity: Until ${quotation.validUntil || "-"}\n` +
         `Warm regards,\n` +
         `Rolex Operations Team`
     );
@@ -168,23 +168,23 @@ export function QuotationPreviewModal({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {quotation.items.map((item, index) => (
+                {(quotation.items || []).map((item, index) => (
                   <tr key={item.id} className="hover:bg-muted/20">
                     <td className="p-3 text-muted-foreground">{index + 1}</td>
                     <td className="p-3 font-medium text-foreground">
-                      {item.description}
+                      {item.description || "Service Item"}
                       {item.category && (
                         <span className="block text-[10px] text-muted-foreground font-normal">
                           {item.category}
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-right">{item.qty}</td>
+                    <td className="p-3 text-right">{item.qty || 1}</td>
                     <td className="p-3 text-right">
-                      ₹{item.unitPrice.toLocaleString()}
+                      ₹{(item.unitPrice || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-right font-semibold">
-                      ₹{item.amount.toLocaleString()}
+                      ₹{(item.amount || 0).toLocaleString()}
                     </td>
                   </tr>
                 ))}
@@ -199,7 +199,7 @@ export function QuotationPreviewModal({
                 Terms & Conditions:
               </div>
               <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                {profile.quotationTerms.slice(0, 3).map((term, i) => (
+                {(profile.quotationTerms || []).slice(0, 3).map((term, i) => (
                   <li key={i}>{term}</li>
                 ))}
               </ul>
@@ -214,7 +214,7 @@ export function QuotationPreviewModal({
               <div className="flex justify-between py-1 border-b border-border/40">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium">
-                  ₹{quotation.subtotal.toLocaleString()}
+                  ₹{(quotation.subtotal || 0).toLocaleString()}
                 </span>
               </div>
               {quotation.discountPercentage > 0 && (

@@ -251,11 +251,49 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         }
 
         if (liveQuotations.status === "fulfilled" && Array.isArray(liveQuotations.value)) {
-          setQuotations(liveQuotations.value);
+          const mappedQuotations: Quotation[] = liveQuotations.value.map((q: any) => ({
+            id: q.id,
+            quotationNumber: q.quotation_number ?? q.quotationNumber ?? "QTN-001",
+            eventId: q.event_id ?? q.eventId,
+            eventTitle: q.event_title ?? q.eventTitle ?? "Banquet Event",
+            clientName: q.client_name ?? q.clientName ?? "Client",
+            clientPhone: q.client_phone ?? q.clientPhone ?? "",
+            clientEmail: q.client_email ?? q.clientEmail ?? "",
+            date: q.date || new Date().toISOString().split("T")[0],
+            validUntil: q.valid_until ?? q.validUntil ?? "",
+            subtotal: Number(q.subtotal ?? 0),
+            taxPercentage: Number(q.tax_pct ?? q.taxPercentage ?? 5),
+            discountPercentage: Number(q.discount_pct ?? q.discountPercentage ?? 0),
+            total: Number(q.total ?? 0),
+            status: (q.status || "draft") as any,
+            notes: q.notes || "",
+            items: (q.items || []).map((it: any) => ({
+              id: it.id,
+              description: it.description || "",
+              category: it.category || "Food & Beverage",
+              qty: Number(it.quantity ?? it.qty ?? 1),
+              unitPrice: Number(it.unit_rate ?? it.unitPrice ?? 0),
+              amount: Number(it.amount ?? 0),
+            })),
+          }));
+          setQuotations(mappedQuotations);
         }
 
         if (liveTransactions.status === "fulfilled" && Array.isArray(liveTransactions.value)) {
-          setTransactions(liveTransactions.value);
+          const mappedTransactions: Transaction[] = liveTransactions.value.map((t: any) => ({
+            id: t.id,
+            date: t.date || new Date().toISOString().split("T")[0],
+            type: t.type as "income" | "expense",
+            amount: Number(t.amount ?? 0),
+            category: t.category || "General",
+            description: t.description || "",
+            eventId: t.event_id ?? t.eventId,
+            eventTitle: t.event_title ?? t.eventTitle,
+            clientName: t.client_name ?? t.clientName,
+            paymentMethod: (t.payment_method ?? t.paymentMethod ?? "Bank Transfer") as any,
+            status: (t.status ?? "completed") as any,
+          }));
+          setTransactions(mappedTransactions);
         }
 
         if (liveProfile.status === "fulfilled" && liveProfile.value && liveProfile.value.name) {
@@ -753,7 +791,26 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     }
 
     api.quotations
-      .create(quotData)
+      .create({
+        client_name: quotData.clientName,
+        client_phone: quotData.clientPhone,
+        event_title: quotData.eventTitle,
+        date: quotData.date,
+        valid_until: quotData.validUntil,
+        status: quotData.status,
+        subtotal: quotData.subtotal,
+        tax_pct: quotData.taxPercentage,
+        discount_pct: quotData.discountPercentage,
+        total: quotData.total,
+        notes: quotData.notes || "",
+        items: (quotData.items || []).map((it) => ({
+          description: it.description,
+          category: it.category || "Food & Beverage",
+          quantity: it.qty,
+          unit_rate: it.unitPrice,
+          amount: it.amount,
+        })),
+      })
       .catch((err) => console.warn("Could not sync quotation creation to API:", err));
 
     return newQuot;
@@ -777,7 +834,18 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
       id: `txn-${Date.now()}`,
     };
     setTransactions((prev) => [newTxn, ...prev]);
-    api.transactions.create(txnData).catch((err) => console.warn("Could not sync transaction to API:", err));
+    api.transactions
+      .create({
+        event_id: txnData.eventId,
+        type: txnData.type,
+        amount: txnData.amount,
+        category: txnData.category,
+        description: txnData.description,
+        date: txnData.date,
+        payment_method: txnData.paymentMethod,
+        status: txnData.status,
+      })
+      .catch((err) => console.warn("Could not sync transaction to API:", err));
     return newTxn;
   };
 
