@@ -88,7 +88,10 @@ export function QuotationPreviewModal({
 
   const handleMarkApproved = () => {
     updateQuotationStatus(quotation.id, "approved");
-    toast.success("Quotation marked as Approved!");
+    toast.success("Quotation Approved!", {
+      description: `Event "${quotation.eventTitle}" is now Confirmed in the Events Calendar.`,
+    });
+    onOpenChange(false);
   };
 
   return (
@@ -156,12 +159,11 @@ export function QuotationPreviewModal({
           <div className="flex items-center gap-2">
             {quotation.status !== "approved" && (
               <Button
-                variant="outline"
                 size="sm"
                 onClick={handleMarkApproved}
-                className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 gap-1.5"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs font-semibold"
               >
-                <Check className="w-4 h-4" /> Mark Approved
+                <Check className="w-4 h-4" /> Confirm & Book Event
               </Button>
             )}
             <Button

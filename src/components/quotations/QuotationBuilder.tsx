@@ -493,6 +493,11 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       eventTitle,
       clientName,
       clientPhone,
+      venue,
+      eventDate,
+      eventTiming,
+      guestCount,
+      serviceType,
       date: new Date().toISOString().split("T")[0] ?? "2026-09-24",
       validUntil: eventDate || "2026-10-31",
       items: lineItems,
@@ -504,7 +509,11 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       notes: quotationRemarks,
     });
 
-    toast.success(`Quotation ${created.quotationNumber} saved successfully!`);
+    if (status === "approved") {
+      toast.success(`Quotation ${created.quotationNumber} approved! Event confirmed in Events calendar.`);
+    } else {
+      toast.success(`Quotation ${created.quotationNumber} saved as ${status.toUpperCase()}!`);
+    }
     onBack();
   };
 
@@ -578,6 +587,16 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download PDF</span>
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => handleSaveQuotation("approved")}
+            className="text-xs h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs gap-1.5"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Confirm & Book Event</span>
           </Button>
         </div>
       </div>

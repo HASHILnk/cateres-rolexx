@@ -94,6 +94,11 @@ export interface Quotation {
   total: number;
   status: "draft" | "sent" | "approved" | "rejected";
   notes?: string | undefined;
+  venue?: string | undefined;
+  eventDate?: string | undefined;
+  eventTiming?: string | undefined;
+  guestCount?: number | undefined;
+  serviceType?: string | undefined;
 }
 
 export interface Expense {

@@ -22,7 +22,9 @@ import {
   Plus,
   TrendingUp,
   Clock,
+  CheckCircle2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/quotations/")({
   component: QuotationsPage,
@@ -254,6 +256,22 @@ function QuotationsPage() {
                         ₹{(q.total || 0).toLocaleString()}
                       </td>
                       <td className="p-3.5 text-right space-x-2">
+                        {q.status !== "approved" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              updateQuotationStatus(q.id, "approved");
+                              toast.success(`Quotation ${q.quotationNumber} approved!`, {
+                                description: `Event "${q.eventTitle}" is now Confirmed in Events calendar.`,
+                              });
+                            }}
+                            className="text-xs h-8 text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            Confirm Event
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

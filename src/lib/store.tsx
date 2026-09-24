@@ -788,6 +788,38 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
 
     if (quotData.eventId) {
       updateEvent(quotData.eventId, { quotationId: newQuot.id });
+    } else if (quotData.status === "approved") {
+      // Auto-create confirmed event if saved directly as approved
+      const parsedEventType = (quotData.serviceType === "Plated Table Service" ? "Reception" : "Wedding") as any;
+      const newEvent = addEvent({
+        title: quotData.eventTitle,
+        clientName: quotData.clientName,
+        clientPhone: quotData.clientPhone,
+        clientEmail: quotData.clientEmail,
+        date: quotData.eventDate || quotData.validUntil || new Date().toISOString().split("T")[0],
+        time: quotData.eventTiming || "06:00 PM - 11:00 PM",
+        venue: quotData.venue || "Bianco Castle, Tirur",
+        guestCount: quotData.guestCount || 1500,
+        eventType: parsedEventType,
+        status: "confirmed",
+        packageTier: "Royal Grandeur",
+        budget: quotData.total,
+        advancePaid: 0,
+        readinessChecklist: [
+          { id: `chk-1-${Date.now()}`, label: "Quotation & Menu Approved by Client", category: "client", completed: true },
+          { id: `chk-2-${Date.now()}`, label: "50% Booking Advance Received", category: "payment", completed: false },
+          { id: `chk-3-${Date.now()}`, label: "Kitchen Ingredient Procurement Order", category: "menu", completed: false },
+          { id: `chk-4-${Date.now()}`, label: "Banquet Ware & Chafing Handis Reserved", category: "stock", completed: false },
+          { id: `chk-5-${Date.now()}`, label: "Service Captains & Stewards Rostered", category: "staff", completed: false },
+          { id: `chk-6-${Date.now()}`, label: "Logistics Van & Kitchen Dispatch Scheduled", category: "logistics", completed: false },
+        ],
+        menuCourses: [],
+        stockAllocations: [],
+        expenses: [],
+        staffAssigned: [],
+        quotationId: newQuot.id,
+      });
+      newQuot.eventId = newEvent.id;
     }
 
     api.quotations
@@ -820,10 +852,59 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     id: string,
     status: Quotation["status"]
   ) => {
+    const targetQuot = quotations.find((q) => q.id === id);
+
     setQuotations((prev) =>
       prev.map((q) => (q.id === id ? { ...q, status } : q))
     );
     api.quotations.updateStatus(id, status).catch((err) => console.warn("Could not sync quotation status to API:", err));
+
+    if (status === "approved" && targetQuot) {
+      if (targetQuot.eventId) {
+        // Link to existing event and confirm it
+        updateEvent(targetQuot.eventId, {
+          status: "confirmed",
+          budget: targetQuot.total,
+          quotationId: targetQuot.id,
+        });
+      } else {
+        // Automatically create and confirm the event in the schedule!
+        const parsedEventType = (targetQuot.serviceType === "Plated Table Service" ? "Reception" : "Wedding") as any;
+        const newEvent = addEvent({
+          title: targetQuot.eventTitle,
+          clientName: targetQuot.clientName,
+          clientPhone: targetQuot.clientPhone,
+          clientEmail: targetQuot.clientEmail,
+          date: targetQuot.eventDate || targetQuot.validUntil || new Date().toISOString().split("T")[0],
+          time: targetQuot.eventTiming || "06:00 PM - 11:00 PM",
+          venue: targetQuot.venue || "Bianco Castle, Tirur",
+          guestCount: targetQuot.guestCount || 1500,
+          eventType: parsedEventType,
+          status: "confirmed",
+          packageTier: "Royal Grandeur",
+          budget: targetQuot.total,
+          advancePaid: 0,
+          readinessChecklist: [
+            { id: `chk-1-${Date.now()}`, label: "Quotation & Menu Approved by Client", category: "client", completed: true },
+            { id: `chk-2-${Date.now()}`, label: "50% Booking Advance Received", category: "payment", completed: false },
+            { id: `chk-3-${Date.now()}`, label: "Kitchen Ingredient Procurement Order", category: "menu", completed: false },
+            { id: `chk-4-${Date.now()}`, label: "Banquet Ware & Chafing Handis Reserved", category: "stock", completed: false },
+            { id: `chk-5-${Date.now()}`, label: "Service Captains & Stewards Rostered", category: "staff", completed: false },
+            { id: `chk-6-${Date.now()}`, label: "Logistics Van & Kitchen Dispatch Scheduled", category: "logistics", completed: false },
+          ],
+          menuCourses: [],
+          stockAllocations: [],
+          expenses: [],
+          staffAssigned: [],
+          quotationId: targetQuot.id,
+        });
+
+        // Link the newly created event back to the quotation
+        setQuotations((prev) =>
+          prev.map((q) => (q.id === id ? { ...q, eventId: newEvent.id } : q))
+        );
+      }
+    }
   };
 
   const addTransaction = (
