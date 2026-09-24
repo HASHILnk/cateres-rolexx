@@ -189,19 +189,101 @@
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  /* 1. Force exact background colors, images, and gradients across all browsers */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* 2. Hide all non-printable application shell, navigation, sidebars, headers, and editor inputs */
   aside,
   nav,
   header,
-  button:not(.print-keep),
-  .no-print {
+  button,
+  .no-print,
+  .rolex-screen-only,
+  div[data-state="open"]:not([role="dialog"]),
+  .toaster,
+  [data-sonner-toaster],
+  [data-radix-focus-guard] {
     display: none !important;
   }
 
-  body,
-  main {
-    background: white !important;
-    color: black !important;
-    padding: 0 !important;
+  /* 3. Reset document canvas to natural luxury parchment */
+  html,
+  body {
+    background: #FAF6EE !important;
+    color: #141518 !important;
     margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+  }
+
+  #root,
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+    background: transparent !important;
+  }
+
+  /* 4. Display the printable quotation document seamlessly */
+  .rolex-print-sheet {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 16px 20px !important;
+    background: #FAF6EE !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .rolex-print-sheet * {
+    visibility: visible !important;
+  }
+
+  /* 5. Prevent awkward page breaks inside logical cards, sections, and totals */
+  .rolex-print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* 6. Remove dialog portal clipping & fixed positioning during print */
+  [role="dialog"] {
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    transform: none !important;
+  }
+
+  /* Dialog backdrop transparent in print */
+  [data-state="open"] {
+    background: transparent !important;
+    backdrop-filter: none !important;
   }
 }

@@ -106,7 +106,7 @@ export function RolexQuotationDocument({
 
   return (
     <div
-      className={`relative bg-[#FAF6EE] text-[#141518] rounded-3xl border border-[#E7DFCE] p-4 sm:p-7 shadow-lg overflow-hidden font-sans select-none print:shadow-none print:border-none print:bg-white print:p-0 ${className}`}
+      className={`rolex-print-sheet relative bg-[#FAF6EE] text-[#141518] rounded-3xl border border-[#E7DFCE] p-4 sm:p-7 shadow-lg overflow-hidden font-sans select-none print:shadow-none print:border-none print:rounded-none print:p-0 print:max-h-none print:overflow-visible ${className}`}
     >
       {/* ================================================== */}
       {/* 0. FAINT BACKGROUND WATERMARK                       */}
@@ -114,16 +114,16 @@ export function RolexQuotationDocument({
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0">
         <img
           src="/images/rolex-logo-transparent.png"
-          className="w-[85%] max-w-[420px] opacity-[0.035] filter grayscale contrast-150 select-none pointer-events-none"
+          className="w-[85%] max-w-[420px] opacity-[0.035] print:opacity-[0.04] filter grayscale contrast-150 select-none pointer-events-none"
           alt=""
         />
       </div>
 
-      <div className="relative z-10 space-y-4 sm:space-y-5">
+      <div className="relative z-10 space-y-4 sm:space-y-5 print:space-y-4">
         {/* ================================================== */}
         {/* 1. TOP LUXURY OBSIDIAN & GOLD BRAND CARD           */}
         {/* ================================================== */}
-        <div className="bg-[#111215] text-white rounded-2xl p-5 sm:p-6 text-center border border-[#C5A059]/40 shadow-sm relative overflow-hidden">
+        <div className="rolex-print-avoid-break bg-[#111215] text-white rounded-2xl p-5 sm:p-6 text-center border border-[#C5A059]/40 shadow-sm relative overflow-hidden print:p-4">
           {/* Subtle gold corner accents */}
           <div className="absolute top-2 left-2 text-[#C5A059]/30 text-xs">╔</div>
           <div className="absolute top-2 right-2 text-[#C5A059]/30 text-xs">╗</div>
@@ -173,7 +173,7 @@ export function RolexQuotationDocument({
         {/* ================================================== */}
         {/* 2. EVENT METADATA ROWS (INDIVIDUAL PILL STRIPS)    */}
         {/* ================================================== */}
-        <div className="space-y-1.5 text-xs">
+        <div className="rolex-print-avoid-break space-y-1.5 text-xs">
           {/* Row 1: NAME */}
           <div className="bg-white/90 border border-[#EAE2D2] rounded-xl px-4 py-2 flex items-center justify-between shadow-2xs">
             <span className="text-[10px] font-bold text-[#8C7443] uppercase tracking-wider">
@@ -238,11 +238,11 @@ export function RolexQuotationDocument({
         {/* ================================================== */}
         {/* 3. MENU SECTIONS & INCLUSIONS                      */}
         {/* ================================================== */}
-        <div className="space-y-4 pt-1">
+        <div className="space-y-3 pt-1">
           {sections.map((sec, idx) => (
-            <div key={sec.id || idx} className="space-y-2">
+            <div key={sec.id || idx} className="rolex-print-avoid-break space-y-1.5 py-1">
               {/* Champagne Gold Banner Bar */}
-              <div className="bg-[#F8F2E4] border border-[#E5DBBE] rounded-lg py-2 px-3 text-center shadow-2xs">
+              <div className="bg-[#F8F2E4] border border-[#E5DBBE] rounded-lg py-1.5 px-3 text-center shadow-2xs">
                 <span className="font-serif font-bold text-xs uppercase tracking-widest text-[#7D5E1F] block">
                   {sec.name}
                 </span>
@@ -250,7 +250,7 @@ export function RolexQuotationDocument({
 
               {/* Items List with Diamonds */}
               {sec.items && sec.items.length > 0 ? (
-                <div className="space-y-1.5 px-3 sm:px-4 py-1">
+                <div className="space-y-1 px-3 sm:px-4 py-0.5">
                   {sec.items.map((item, iIdx) => (
                     <div
                       key={iIdx}
@@ -270,7 +270,7 @@ export function RolexQuotationDocument({
               )}
 
               {/* Decorative Flourish Divider between sections */}
-              <div className="flex items-center justify-center gap-2 py-1 text-[#C5A059]/40">
+              <div className="flex items-center justify-center gap-2 py-0.5 text-[#C5A059]/40">
                 <span className="h-[1px] w-10 bg-[#C5A059]/30" />
                 <span className="text-[8px] text-[#C5A059]/60">◆</span>
                 <span className="h-[1px] w-10 bg-[#C5A059]/30" />
@@ -282,7 +282,7 @@ export function RolexQuotationDocument({
         {/* ================================================== */}
         {/* 4. TOTAL QUOTATION AMOUNT CARD                     */}
         {/* ================================================== */}
-        <div className="bg-[#111215] text-white rounded-2xl p-5 sm:p-6 text-center border border-[#C5A059]/50 shadow-md space-y-2 relative overflow-hidden">
+        <div className="rolex-print-avoid-break bg-[#111215] text-white rounded-2xl p-5 sm:p-6 text-center border border-[#C5A059]/50 shadow-md space-y-2 relative overflow-hidden print:p-4">
           <span className="text-[9.5px] sm:text-[10px] font-bold text-[#C9A45C] uppercase tracking-[0.2em] block">
             TOTAL QUOTATION AMOUNT
           </span>
@@ -304,7 +304,7 @@ export function RolexQuotationDocument({
         {/* 5. QUOTATION REMARKS & TERMS BOX                   */}
         {/* ================================================== */}
         {quotationRemarks && (
-          <div className="bg-white/90 border border-[#EAE2D2] rounded-xl p-3.5 sm:p-4 text-xs text-[#52525B] leading-relaxed shadow-2xs space-y-1">
+          <div className="rolex-print-avoid-break bg-white/90 border border-[#EAE2D2] rounded-xl p-3.5 sm:p-4 text-xs text-[#52525B] leading-relaxed shadow-2xs space-y-1">
             <span className="font-bold text-[#8C7443] text-[10px] uppercase tracking-wider block">
               Special Instructions & Terms:
             </span>
@@ -317,7 +317,7 @@ export function RolexQuotationDocument({
         {/* ================================================== */}
         {/* 6. SIGN-OFF & FOOTER CREDENTIALS                   */}
         {/* ================================================== */}
-        <div className="pt-2 sm:pt-3 text-xs text-[#70757F] space-y-1">
+        <div className="rolex-print-avoid-break pt-2 sm:pt-3 text-xs text-[#70757F] space-y-1">
           <div className="font-serif font-semibold text-[#111215]">Thanking You,</div>
           <div className="font-bold text-[#8C7443] text-sm font-serif">Rolex Caterers</div>
           <div className="text-[11px] text-[#70757F]">For ROLEX Events & Caterers</div>

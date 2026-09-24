@@ -517,7 +517,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       {/* ================================================== */}
       {/* 1. TOP HEADER & WORKSPACE ACTIONS                  */}
       {/* ================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rolex-screen-only">
         <div>
           <button
             type="button"
@@ -585,7 +585,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       {/* ================================================== */}
       {/* 2. CLIENT / EVENT CONTEXT CARD                     */}
       {/* ================================================== */}
-      <div className="bg-white border border-[#E8E4DC] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E8E4DC] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 rolex-screen-only">
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-[#FAF5ED] border border-[#E8DEC8] text-[#8C7443] flex items-center justify-center shrink-0">
             <UserCheck className="w-5 h-5" />
@@ -628,7 +628,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
         {/* ================================================ */}
         {/* LEFT COLUMN: QUOTATION EDITOR (col-span-7)       */}
         {/* ================================================ */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-6 rolex-screen-only">
           {/* STEP 1: EVENT DETAILS */}
           <div className="bg-white border border-[#E8E4DC] rounded-2xl p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#F0EDE6]">
@@ -979,8 +979,8 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
         {/* ================================================ */}
         {/* RIGHT COLUMN: LIVE QUOTATION PREVIEW (col-span-5)*/}
         {/* ================================================ */}
-        <div className="lg:col-span-5 space-y-3 sticky top-6">
-          <div className="flex items-center justify-between px-1">
+        <div className="lg:col-span-5 space-y-3 sticky top-6 print:col-span-12 print:static print:w-full print:p-0 print:m-0">
+          <div className="flex items-center justify-between px-1 rolex-screen-only">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-[#8C7443]" />
               <h3 className="font-serif text-base font-bold text-[#111215]">
@@ -999,7 +999,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
           </div>
 
           {/* EXACT REFERENCE QUOTATION DOCUMENT */}
-          <div className="max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl shadow-sm border border-[#E7DFCE]">
+          <div className="max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl shadow-sm border border-[#E7DFCE] print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0">
             <RolexQuotationDocument
               clientName={clientName}
               clientPhone={clientPhone}
@@ -1020,7 +1020,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       {/* ================================================== */}
       {/* 4. MOBILE STICKY BOTTOM ACTION BAR                 */}
       {/* ================================================== */}
-      <div className="sm:hidden fixed bottom-16 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-[#E8E4DC] flex items-center justify-between gap-3 z-30 shadow-lg">
+      <div className="sm:hidden fixed bottom-16 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-[#E8E4DC] flex items-center justify-between gap-3 z-30 shadow-lg rolex-screen-only">
         <div>
           <span className="text-[10px] text-[#70757F] block uppercase font-bold">Total</span>
           <span className="font-serif font-bold text-base text-[#111215]">
@@ -1209,8 +1209,8 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       {/* MODAL: FULL QUOTATION PREVIEW & PDF EXPORT         */}
       {/* ================================================== */}
       <Dialog open={fullPreviewModalOpen} onOpenChange={setFullPreviewModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border-[#E8E4DC] bg-[#FAF6EE]">
-          <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between sticky top-0 z-20">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border-[#E8E4DC] bg-[#FAF6EE] print:max-h-none print:overflow-visible print:p-0 print:border-none print:bg-transparent">
+          <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between sticky top-0 z-20 rolex-screen-only">
             <DialogTitle className="font-serif text-base font-bold text-[#111215] flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#8C7443]" />
               Official Catering Quotation
@@ -1228,7 +1228,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
             </div>
           </DialogHeader>
 
-          <div className="p-4 sm:p-6">
+          <div className="p-4 sm:p-6 print:p-0 print:m-0">
             <RolexQuotationDocument
               clientName={clientName}
               clientPhone={clientPhone}

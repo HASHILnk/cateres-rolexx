@@ -93,8 +93,8 @@ export function QuotationPreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden border-[#E8E4DC] bg-[#FAF6EE] shadow-2xl print:border-none print:shadow-none">
-        <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between no-print sticky top-0 z-20">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden border-[#E8E4DC] bg-[#FAF6EE] shadow-2xl print:border-none print:shadow-none print:p-0 print:max-h-none print:overflow-visible print:bg-transparent">
+        <DialogHeader className="p-4 border-b border-[#E8E4DC] bg-[#FAF8F5] flex flex-row items-center justify-between no-print rolex-screen-only sticky top-0 z-20">
           <DialogTitle className="text-base font-semibold flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#C5A059]" />
             Quotation Preview — {quotation.quotationNumber}
@@ -114,7 +114,7 @@ export function QuotationPreviewModal({
         </DialogHeader>
 
         {/* PRINTABLE INVOICE BODY */}
-        <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto bg-[#FAF6EE] print:p-0 print:max-h-none print:overflow-visible">
+        <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto bg-[#FAF6EE] print:p-0 print:m-0 print:max-h-none print:overflow-visible">
           <RolexQuotationDocument
             clientName={quotation.clientName || linkedEvent?.clientName || "Valued Client"}
             clientPhone={quotation.clientPhone || linkedEvent?.clientPhone || "+91 XXXXX XXXXX"}
@@ -133,7 +133,7 @@ export function QuotationPreviewModal({
         </div>
 
         {/* ACTION FOOTER */}
-        <DialogFooter className="p-4 border-t border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-2 no-print">
+        <DialogFooter className="p-4 border-t border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-2 no-print rolex-screen-only">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
