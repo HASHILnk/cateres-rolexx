@@ -20,12 +20,11 @@ function resolveApiBaseUrl(): string {
     if (host === "localhost" || host === "127.0.0.1") {
       return "http://localhost:8000";
     }
-    // 3. In production on Render, return "" (relative URL)
-    // Requests like /api/auth/login are reverse-proxied internally by the frontend server
-    return "";
+    // 3. In production on Render, connect directly to the live verified backend URL:
+    return "https://rolex-backend-7blq.onrender.com";
   }
 
-  return "http://localhost:8000";
+  return "https://rolex-backend-7blq.onrender.com";
 }
 
 const API_BASE_URL = resolveApiBaseUrl();

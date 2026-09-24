@@ -53,13 +53,13 @@ export default {
       if (url.pathname.startsWith("/api/")) {
         const rawTarget =
           process.env.BACKEND_INTERNAL_URL ||
-          (process.env.VITE_API_URL && !process.env.VITE_API_URL.includes(".")
-            ? `${process.env.VITE_API_URL}:10000`
-            : "127.0.0.1:8000");
+          (process.env.VITE_API_URL && process.env.VITE_API_URL.includes(".")
+            ? process.env.VITE_API_URL
+            : "https://rolex-backend-7blq.onrender.com");
 
         const backendBase = rawTarget.startsWith("http://") || rawTarget.startsWith("https://")
           ? rawTarget
-          : `http://${rawTarget}`;
+          : `https://${rawTarget}`;
 
         const targetUrl = `${backendBase.replace(/\/+$/, "")}${url.pathname}${url.search}`;
 
