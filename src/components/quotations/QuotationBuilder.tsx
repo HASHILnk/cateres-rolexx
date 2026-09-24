@@ -979,7 +979,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
         {/* ================================================ */}
         {/* RIGHT COLUMN: LIVE QUOTATION PREVIEW (col-span-5)*/}
         {/* ================================================ */}
-        <div className="lg:col-span-5 space-y-3 sticky top-6 print:col-span-12 print:static print:w-full print:p-0 print:m-0">
+        <div className={`lg:col-span-5 space-y-3 sticky top-6 ${fullPreviewModalOpen ? "print:hidden" : "print:col-span-12 print:static print:w-full print:p-0 print:m-0"}`}>
           <div className="flex items-center justify-between px-1 rolex-screen-only">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-[#8C7443]" />
@@ -999,7 +999,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
           </div>
 
           {/* EXACT REFERENCE QUOTATION DOCUMENT */}
-          <div className="max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl shadow-sm border border-[#E7DFCE] print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0">
+          <div className={`max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl shadow-sm border border-[#E7DFCE] print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 ${fullPreviewModalOpen ? "print:hidden" : ""}`}>
             <RolexQuotationDocument
               clientName={clientName}
               clientPhone={clientPhone}
@@ -1012,6 +1012,8 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
               sections={sections}
               grandTotal={grandTotal}
               quotationRemarks={quotationRemarks}
+              printId={fullPreviewModalOpen ? undefined : "rolex-active-quotation-print"}
+              className={fullPreviewModalOpen ? "print:hidden" : ""}
             />
           </div>
         </div>
@@ -1241,6 +1243,7 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
               sections={sections}
               grandTotal={grandTotal}
               quotationRemarks={quotationRemarks}
+              printId="rolex-active-quotation-print"
             />
           </div>
         </DialogContent>

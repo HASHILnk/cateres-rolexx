@@ -129,6 +129,7 @@ export function QuotationPreviewModal({
             quotationRemarks={quotation.notes}
             quotationNumber={quotation.quotationNumber}
             dateIssued={quotation.date}
+            printId="rolex-active-quotation-print"
           />
         </div>
 

@@ -213,7 +213,8 @@
   div[data-state="open"]:not([role="dialog"]),
   .toaster,
   [data-sonner-toaster],
-  [data-radix-focus-guard] {
+  [data-radix-focus-guard],
+  .print\:hidden {
     display: none !important;
   }
 
@@ -240,7 +241,11 @@
     background: transparent !important;
   }
 
-  /* 4. Display the printable quotation document seamlessly */
+  /* 4. Display ONLY the active printable quotation document */
+  body:has(#rolex-active-quotation-print) .rolex-print-sheet:not(#rolex-active-quotation-print) {
+    display: none !important;
+  }
+
   .rolex-print-sheet {
     display: block !important;
     visibility: visible !important;
@@ -248,7 +253,7 @@
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 16px 20px !important;
+    padding: 0 !important;
     background: #FAF6EE !important;
     border: none !important;
     border-radius: 0 !important;
