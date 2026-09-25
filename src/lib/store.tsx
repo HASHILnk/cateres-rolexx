@@ -94,6 +94,7 @@ interface OperationsContextType {
   createQuotation: (
     quotation: Omit<Quotation, "id" | "quotationNumber">
   ) => Quotation;
+  updateQuotation: (id: string, updates: Partial<Quotation>) => void;
   updateQuotationStatus: (id: string, status: Quotation["status"]) => void;
 
   // Transaction Actions
@@ -907,6 +908,70 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateQuotation = (id: string, updates: Partial<Quotation>) => {
+    setQuotations((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...updates } : q))
+    );
+
+    // Sync with linked event if exists
+    const q = quotations.find((quot) => quot.id === id);
+    const eventId = updates.eventId || q?.eventId;
+    const linkedEvent = events.find((ev) => ev.id === eventId || ev.quotationId === id || (q && ev.title === q.eventTitle));
+
+    if (linkedEvent) {
+      const eventUpdates: any = {};
+      if (updates.total !== undefined) eventUpdates.budget = updates.total;
+      if (updates.guestCount !== undefined) eventUpdates.guestCount = updates.guestCount;
+      if (updates.venue !== undefined) eventUpdates.venue = updates.venue;
+      if (updates.eventDate !== undefined) eventUpdates.date = updates.eventDate;
+      if (updates.eventTiming !== undefined) eventUpdates.time = updates.eventTiming;
+      if (updates.eventTitle !== undefined) eventUpdates.title = updates.eventTitle;
+
+      if (updates.sections && updates.sections.length > 0) {
+        eventUpdates.menuCourses = updates.sections.map((sec, idx) => ({
+          category: sec.name || sec.category || `Course ${idx + 1}`,
+          items: sec.items.map((itemName, iIdx) => ({
+            id: `m-${Date.now()}-${idx}-${iIdx}`,
+            name: itemName,
+            description: "",
+            isVeg: !itemName.toLowerCase().includes("chicken") &&
+                   !itemName.toLowerCase().includes("mutton") &&
+                   !itemName.toLowerCase().includes("beef") &&
+                   !itemName.toLowerCase().includes("fish") &&
+                   !itemName.toLowerCase().includes("chemmeen"),
+            estimatedPortions: updates.guestCount || linkedEvent.guestCount || 1500,
+          })),
+        }));
+      }
+
+      updateEvent(linkedEvent.id, eventUpdates);
+    }
+
+    // Sync to backend API
+    api.quotations
+      .update(id, {
+        client_name: updates.clientName || q?.clientName,
+        client_phone: updates.clientPhone || q?.clientPhone,
+        event_title: updates.eventTitle || q?.eventTitle,
+        date: updates.date || q?.date,
+        valid_until: updates.validUntil || q?.validUntil,
+        status: updates.status || q?.status || "approved",
+        subtotal: updates.subtotal ?? q?.subtotal ?? 0,
+        tax_pct: updates.taxPercentage ?? q?.taxPercentage ?? 5,
+        discount_pct: updates.discountPercentage ?? q?.discountPercentage ?? 0,
+        total: updates.total ?? q?.total ?? 0,
+        notes: updates.notes ?? q?.notes ?? "",
+        items: (updates.items || q?.items || []).map((it) => ({
+          description: it.description,
+          category: it.category || "Food & Beverage",
+          quantity: it.qty,
+          unit_rate: it.unitPrice,
+          amount: it.amount,
+        })),
+      })
+      .catch((err) => console.warn("Could not sync quotation update to API:", err));
+  };
+
   const addTransaction = (
     txnData: Omit<Transaction, "id">
   ): Transaction => {
@@ -1008,6 +1073,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         addClient,
         updateClient,
         createQuotation,
+        updateQuotation,
         updateQuotationStatus,
         addTransaction,
         updateProfile,

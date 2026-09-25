@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
+  Edit2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,7 +47,14 @@ function QuotationsPage() {
     }
     return false;
   });
-  const [editingQuotationId, setEditingQuotationId] = useState<string | undefined>(undefined);
+
+  const [editingQuotationId, setEditingQuotationId] = useState<string | undefined>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id") || undefined;
+    }
+    return undefined;
+  });
 
   // Sync browser URL history without reloading page
   const handleOpenCreate = (id?: string) => {
@@ -275,6 +283,15 @@ function QuotationsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleOpenCreate(q.id)}
+                          className="text-xs h-8 border-[#C9A45C]/50 text-[#8C7443] hover:bg-[#FAF6EE] dark:hover:bg-[#8C7443]/10"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 mr-1" />
+                          Edit / Revise
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             setActiveQuotation(q);
                             setPreviewOpen(true);
@@ -308,6 +325,7 @@ function QuotationsPage() {
         quotation={activeQuotation}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+        onEdit={(id) => handleOpenCreate(id)}
       />
     </AppShell>
   );

@@ -61,6 +61,47 @@ def create_quotation(
     return q
 
 
+@router.put("/{quotation_id}", response_model=QuotationResponse)
+def update_quotation(
+    quotation_id: str,
+    payload: QuotationCreate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin),
+):
+    q = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+
+    q.client_name = payload.client_name
+    q.client_phone = payload.client_phone
+    q.event_title = payload.event_title
+    q.date = payload.date
+    q.valid_until = payload.valid_until
+    q.status = payload.status
+    q.subtotal = payload.subtotal
+    q.tax_pct = payload.tax_pct
+    q.discount_pct = payload.discount_pct
+    q.total = payload.total
+    q.notes = payload.notes
+
+    # Replace line items
+    db.query(QuotationLineItem).filter(QuotationLineItem.quotation_id == quotation_id).delete()
+    for item_data in payload.items:
+        line_item = QuotationLineItem(
+            quotation_id=q.id,
+            description=item_data.description,
+            category=item_data.category,
+            quantity=item_data.quantity,
+            unit_rate=item_data.unit_rate,
+            amount=item_data.amount,
+        )
+        db.add(line_item)
+
+    db.commit()
+    db.refresh(q)
+    return q
+
+
 @router.put("/{quotation_id}/status", response_model=QuotationResponse)
 def update_quotation_status(
     quotation_id: str,

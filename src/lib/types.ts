@@ -99,6 +99,7 @@ export interface Quotation {
   eventTiming?: string | undefined;
   guestCount?: number | undefined;
   serviceType?: string | undefined;
+  sections?: { id?: string; name: string; category?: string; items: string[] }[] | undefined;
 }
 
 export interface Expense {

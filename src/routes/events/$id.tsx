@@ -49,6 +49,7 @@ import {
   ArrowLeft,
   Sparkles,
   Printer,
+  Edit2,
 } from "lucide-react";
 import { Quotation, QuotationLineItem } from "../../lib/types";
 
@@ -308,9 +309,26 @@ function EventWorkspacePage() {
   ];
 
   const handleSyncQuotationMenu = () => {
-    updateEvent(event.id, { menuCourses: DEFAULT_ROYAL_COURSES });
-    toast.success("Approved Banquet Menu synced from Quotation!", {
-      description: `Loaded 10 royal courses with portion calculations for ${event.guestCount} diners.`,
+    let coursesToSync = DEFAULT_ROYAL_COURSES;
+    if (quotation?.sections && quotation.sections.length > 0) {
+      coursesToSync = quotation.sections.map((sec, idx) => ({
+        category: sec.name || sec.category || `Course ${idx + 1}`,
+        items: sec.items.map((itemName, iIdx) => ({
+          id: `m-${Date.now()}-${idx}-${iIdx}`,
+          name: itemName,
+          description: "",
+          isVeg: !itemName.toLowerCase().includes("chicken") &&
+                 !itemName.toLowerCase().includes("mutton") &&
+                 !itemName.toLowerCase().includes("beef") &&
+                 !itemName.toLowerCase().includes("fish") &&
+                 !itemName.toLowerCase().includes("chemmeen"),
+          estimatedPortions: event.guestCount,
+        })),
+      }));
+    }
+    updateEvent(event.id, { menuCourses: coursesToSync });
+    toast.success("Banquet Menu synced from Quotation!", {
+      description: `Loaded ${coursesToSync.length} courses with portion calculations for ${event.guestCount} diners.`,
     });
   };
 
@@ -379,12 +397,22 @@ function EventWorkspacePage() {
             </a>
 
             {quotation ? (
-              <Button
-                onClick={() => setQuotationPreviewOpen(true)}
-                className="bg-gradient-to-r from-[#C5A059] to-[#9A7B38] text-black font-semibold text-xs gap-1.5"
-              >
-                <FileText className="w-4 h-4" /> View Quotation
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.navigate({ href: `/quotations?action=create&id=${quotation.id}` })}
+                  className="border-[#C5A059]/60 text-[#FDFBF7] hover:bg-[#C5A059]/20 text-xs font-semibold gap-1.5"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-[#C5A059]" /> Edit / Revise Quotation
+                </Button>
+                <Button
+                  onClick={() => setQuotationPreviewOpen(true)}
+                  className="bg-gradient-to-r from-[#C5A059] to-[#9A7B38] text-black font-semibold text-xs gap-1.5"
+                >
+                  <FileText className="w-4 h-4" /> View Quotation
+                </Button>
+              </div>
             ) : (
               <Button
                 onClick={handleCreateQuotationForEvent}
@@ -520,6 +548,17 @@ function EventWorkspacePage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {quotation && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.navigate({ href: `/quotations?action=create&id=${quotation.id}` })}
+                    className="text-xs border-[#E8E4DC] hover:border-[#C9A45C] text-[#8C7443] gap-1.5"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit Dishes in Quotation</span>
+                  </Button>
+                )}
                 {event.menuCourses.length > 0 ? (
                   <>
                     <Button
@@ -790,6 +829,15 @@ function EventWorkspacePage() {
                     >
                       Status: {quotation.status}
                     </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.navigate({ href: `/quotations?action=create&id=${quotation.id}` })}
+                      className="border-[#C5A059]/50 text-[#8C7443] dark:text-[#E0BA6E] hover:bg-[#FAF6EE] text-xs font-semibold gap-1.5"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit / Revise</span>
+                    </Button>
                     <Button
                       onClick={() => setQuotationPreviewOpen(true)}
                       className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs"
@@ -1227,6 +1275,7 @@ function EventWorkspacePage() {
         quotation={quotation || null}
         open={quotationPreviewOpen}
         onOpenChange={setQuotationPreviewOpen}
+        onEdit={(quotId) => router.navigate({ href: `/quotations?action=create&id=${quotId}` })}
       />
     </AppShell>
   );

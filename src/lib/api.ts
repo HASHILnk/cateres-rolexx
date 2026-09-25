@@ -215,6 +215,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/quotations/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
     updateStatus: (id: string, status: string) =>
       request<any>(`/api/quotations/${id}/status`, {
         method: "PUT",

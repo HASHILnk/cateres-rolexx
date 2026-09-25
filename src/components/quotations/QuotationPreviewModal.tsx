@@ -11,7 +11,7 @@ import {
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { BrandLogo } from "../common/BrandLogo";
-import { Printer, MessageCircle, Check, Send, Sparkles } from "lucide-react";
+import { Printer, MessageCircle, Check, Send, Sparkles, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { RolexQuotationDocument } from "./RolexQuotationDocument";
@@ -20,12 +20,14 @@ interface QuotationPreviewModalProps {
   quotation: Quotation | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit?: (quotationId: string) => void;
 }
 
 export function QuotationPreviewModal({
   quotation,
   open,
   onOpenChange,
+  onEdit,
 }: QuotationPreviewModalProps) {
   const { profile, updateQuotationStatus, events } = useOperations();
 
@@ -157,6 +159,19 @@ export function QuotationPreviewModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false);
+                  onEdit(quotation.id);
+                }}
+                className="border-[#C9A45C]/60 text-[#8C7443] hover:bg-[#FAF6EE] gap-1.5 font-medium"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit / Revise Quotation
+              </Button>
+            )}
             {quotation.status !== "approved" && (
               <Button
                 size="sm"

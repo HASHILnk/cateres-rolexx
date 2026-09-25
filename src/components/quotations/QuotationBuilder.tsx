@@ -282,7 +282,7 @@ const TEMPLATES: Record<
 };
 
 export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilderProps) {
-  const { clients, events, profile, createQuotation, quotations } = useOperations();
+  const { clients, events, profile, createQuotation, updateQuotation, quotations } = useOperations();
 
   // Try to pre-fill from an existing quotation or event
   const existingQuotation = useMemo(
@@ -295,10 +295,10 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
 
   // Form State
   const [selectedClientId, setSelectedClientId] = useState<string>(
-    initialClient?.id || ""
+    existingQuotation?.clientId || initialClient?.id || ""
   );
   const [selectedEventId, setSelectedEventId] = useState<string>(
-    initialEvent?.id || ""
+    existingQuotation?.eventId || initialEvent?.id || ""
   );
   const [clientName, setClientName] = useState<string>(
     existingQuotation?.clientName || initialClient?.name || "Dr. Radhakrishnan Nair"
@@ -310,25 +310,48 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
     existingQuotation?.eventTitle || initialEvent?.title || "Dr. Nair Silver Jubilee Corporate Gala"
   );
   const [venue, setVenue] = useState<string>(
-    initialEvent?.venue || "Bianco Caste, Trivandrum"
+    existingQuotation?.venue || initialEvent?.venue || "Bianco Castle, Tirur"
   );
   const [eventDate, setEventDate] = useState<string>(
-    existingQuotation?.date || initialEvent?.date || "2026-10-18"
+    existingQuotation?.eventDate || existingQuotation?.date || initialEvent?.date || "2026-10-18"
   );
   const [eventTiming, setEventTiming] = useState<string>(
-    initialEvent?.time || "06:00 PM to 11:00 PM"
+    existingQuotation?.eventTiming || initialEvent?.time || "06:00 PM to 11:00 PM"
   );
   const [guestCount, setGuestCount] = useState<number>(
-    initialEvent?.guestCount || 1500
+    existingQuotation?.guestCount || initialEvent?.guestCount || 1500
   );
-  const [serviceType, setServiceType] = useState<string>("Buffet");
+  const [serviceType, setServiceType] = useState<string>(
+    existingQuotation?.serviceType || "Buffet"
+  );
   const [specialNotes, setSpecialNotes] = useState<string>("");
   const [quotationRemarks, setQuotationRemarks] = useState<string>(
+    existingQuotation?.notes ||
     "Pricing is inclusive of live cooking counter setups, uniformed hospitality captain, bone china tableware, and delivery logistics. Advance 50% required upon confirmation."
   );
 
   // Menu Sections State
   const [sections, setSections] = useState<MenuSection[]>(() => {
+    if (existingQuotation?.sections && existingQuotation.sections.length > 0) {
+      return existingQuotation.sections.map((sec, index) => ({
+        id: sec.id || `sec-${Date.now()}-${index}`,
+        name: sec.name,
+        category: sec.category || "Main Course",
+        items: [...sec.items],
+        isExpanded: index === 0,
+      }));
+    }
+    if (existingQuotation?.items && existingQuotation.items.length > 0) {
+      return [
+        {
+          id: `sec-${Date.now()}-0`,
+          name: "Banquet Catering Inclusions",
+          category: "Main Course",
+          items: existingQuotation.items.map((i) => i.description),
+          isExpanded: true,
+        },
+      ];
+    }
     return TEMPLATES.wedding_grandeur.sections.map((sec, index) => ({
       id: `sec-${Date.now()}-${index}`,
       name: sec.name,
@@ -345,9 +368,24 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
   const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({});
 
   // Pricing State
-  const [subtotal, setSubtotal] = useState<number>(650000);
-  const [discount, setDiscount] = useState<number>(0);
-  const [additionalCharges, setAdditionalCharges] = useState<number>(25000);
+  const [subtotal, setSubtotal] = useState<number>(
+    existingQuotation ? existingQuotation.subtotal : 650000
+  );
+  const [discount, setDiscount] = useState<number>(
+    existingQuotation
+      ? Math.round((existingQuotation.subtotal * (existingQuotation.discountPercentage || 0)) / 100)
+      : 0
+  );
+  const [additionalCharges, setAdditionalCharges] = useState<number>(
+    existingQuotation
+      ? Math.max(
+          0,
+          existingQuotation.total -
+            (existingQuotation.subtotal -
+              Math.round((existingQuotation.subtotal * (existingQuotation.discountPercentage || 0)) / 100))
+        )
+      : 25000
+  );
 
   // Dialogs State
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -488,6 +526,38 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       });
     }
 
+    // If updating an existing quotation:
+    if (initialQuotationId) {
+      updateQuotation(initialQuotationId, {
+        clientName,
+        clientPhone,
+        eventTitle,
+        venue,
+        eventDate,
+        eventTiming,
+        guestCount,
+        serviceType,
+        items: lineItems,
+        sections: sections.map((s) => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          items: s.items,
+        })),
+        subtotal,
+        discountPercentage: discount > 0 ? Math.round((discount / (subtotal || 1)) * 100) : 0,
+        total: grandTotal,
+        status: status || existingQuotation?.status || "approved",
+        notes: quotationRemarks,
+      });
+
+      toast.success(
+        `Quotation ${existingQuotation?.quotationNumber || ""} updated! Linked event "${eventTitle}" menu and budget synchronized.`
+      );
+      onBack();
+      return;
+    }
+
     const created = createQuotation({
       eventId: selectedEventId || undefined,
       eventTitle,
@@ -501,6 +571,12 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
       date: new Date().toISOString().split("T")[0] ?? "2026-09-24",
       validUntil: eventDate || "2026-10-31",
       items: lineItems,
+      sections: sections.map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        items: s.items,
+      })),
       subtotal,
       discountPercentage: discount > 0 ? Math.round((discount / (subtotal || 1)) * 100) : 0,
       taxPercentage: 5,
@@ -537,10 +613,14 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
             <span>Back to Quotations</span>
           </button>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-[#111215]">
-            Create Quotation
+            {initialQuotationId
+              ? `Edit Quotation — ${existingQuotation?.quotationNumber || "Revision"}`
+              : "Create Quotation"}
           </h1>
           <p className="text-xs text-[#70757F] mt-0.5">
-            Build a detailed catering estimate with custom menu, services, and pricing.
+            {initialQuotationId
+              ? `Adjust dishes, guest pax, or pricing. Revisions automatically update the linked event & kitchen sheet.`
+              : "Build a detailed catering estimate with custom menu, services, and pricing."}
           </p>
         </div>
 
@@ -589,15 +669,27 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
             <span>Download PDF</span>
           </Button>
 
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => handleSaveQuotation("approved")}
-            className="text-xs h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs gap-1.5"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Confirm & Book Event</span>
-          </Button>
+          {initialQuotationId ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => handleSaveQuotation("approved")}
+              className="text-xs h-9 px-4 bg-[#8C7443] hover:bg-[#725E35] text-white font-semibold shadow-xs gap-1.5"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Save Changes & Sync Event</span>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => handleSaveQuotation("approved")}
+              className="text-xs h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs gap-1.5"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Confirm & Book Event</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1065,6 +1157,14 @@ export function QuotationBuilder({ onBack, initialQuotationId }: QuotationBuilde
             className="text-xs h-9 bg-[#C9A45C] hover:bg-[#B58E45] text-white font-medium"
           >
             Preview
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => handleSaveQuotation("approved")}
+            className="text-xs h-9 bg-[#8C7443] hover:bg-[#725E35] text-white font-semibold"
+          >
+            {initialQuotationId ? "Update & Sync" : "Confirm"}
           </Button>
         </div>
       </div>
