@@ -124,12 +124,12 @@ function QuotationsPage() {
       ) : (
         <div className="space-y-6 animate-in fade-in-50 duration-300">
           {/* HEADER */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                 Quotations & Invoicing Center
               </h1>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                 Draft, preview, print, and WhatsApp official itemized catering
                 estimates ({quotations.length} records)
               </p>
@@ -137,72 +137,91 @@ function QuotationsPage() {
 
             <Button
               onClick={() => handleOpenCreate()}
-              className="bg-black hover:bg-neutral-800 dark:bg-[#C5A059] dark:hover:bg-[#B59049] dark:text-black text-white font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-xs"
+              className="bg-black hover:bg-neutral-800 dark:bg-[#C5A059] dark:hover:bg-[#B59049] dark:text-black text-white font-semibold text-xs h-9 sm:h-10 px-4 gap-2 cursor-pointer shadow-xs self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" /> Create Quotation
             </Button>
           </div>
 
-          {/* METRICS ROW */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="border-border/80 shadow-xs p-4 flex items-center justify-between">
-              <div>
-                <span className="text-xs text-muted-foreground uppercase font-semibold">
-                  Total Quotations Issued
+          {/* METRICS ROW (Side-by-side & compact on mobile) */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <Card className="border-border/80 shadow-xs p-2 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground uppercase font-semibold block truncate">
+                  Issued
                 </span>
-                <div className="text-2xl font-bold font-serif mt-1">
-                  {quotations.length} Estimates
+                <div className="text-sm sm:text-2xl font-bold font-serif mt-0.5 sm:mt-1 truncate">
+                  {quotations.length}{" "}
+                  <span className="text-[10px] sm:text-xs font-sans font-normal text-muted-foreground hidden sm:inline">
+                    Estimates
+                  </span>
+                  <span className="text-[10px] font-sans font-normal text-muted-foreground sm:hidden">
+                    Est.
+                  </span>
                 </div>
               </div>
-              <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
-                <FileText className="w-5 h-5" />
+              <div className="p-1 sm:p-3 bg-blue-500/10 text-blue-500 rounded-lg sm:rounded-xl shrink-0 self-end sm:self-auto">
+                <FileText className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </div>
             </Card>
 
-            <Card className="border-border/80 shadow-xs p-4 flex items-center justify-between">
-              <div>
-                <span className="text-xs text-muted-foreground uppercase font-semibold">
-                  Approved Pipeline Value
+            <Card className="border-border/80 shadow-xs p-2 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground uppercase font-semibold block truncate">
+                  Approved
                 </span>
-                <div className="text-2xl font-bold font-serif mt-1 text-emerald-600 dark:text-emerald-400">
-                  ₹{approvedValue.toLocaleString()}
+                <div className="text-sm sm:text-2xl font-bold font-serif mt-0.5 sm:mt-1 text-emerald-600 dark:text-emerald-400 truncate">
+                  <span className="sm:hidden">
+                    ₹{approvedValue >= 100000
+                      ? `${(approvedValue / 100000).toFixed(1).replace(/\.0$/, "")}L`
+                      : approvedValue.toLocaleString("en-IN")}
+                  </span>
+                  <span className="hidden sm:inline">
+                    ₹{approvedValue.toLocaleString("en-IN")}
+                  </span>
                 </div>
               </div>
-              <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
-                <TrendingUp className="w-5 h-5" />
+              <div className="p-1 sm:p-3 bg-emerald-500/10 text-emerald-500 rounded-lg sm:rounded-xl shrink-0 self-end sm:self-auto">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </div>
             </Card>
 
-            <Card className="border-border/80 shadow-xs p-4 flex items-center justify-between">
-              <div>
-                <span className="text-xs text-muted-foreground uppercase font-semibold">
-                  Pending Approvals
+            <Card className="border-border/80 shadow-xs p-2 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground uppercase font-semibold block truncate">
+                  Pending
                 </span>
-                <div className="text-2xl font-bold font-serif mt-1 text-amber-600 dark:text-amber-400">
-                  {quotations.filter((q) => q.status === "sent" || q.status === "draft").length} Estimates
+                <div className="text-sm sm:text-2xl font-bold font-serif mt-0.5 sm:mt-1 text-amber-600 dark:text-amber-400 truncate">
+                  {quotations.filter((q) => q.status === "sent" || q.status === "draft").length}{" "}
+                  <span className="text-[10px] sm:text-xs font-sans font-normal text-muted-foreground hidden sm:inline">
+                    Estimates
+                  </span>
+                  <span className="text-[10px] font-sans font-normal text-muted-foreground sm:hidden">
+                    Est.
+                  </span>
                 </div>
               </div>
-              <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
-                <Clock className="w-5 h-5" />
+              <div className="p-1 sm:p-3 bg-amber-500/10 text-amber-500 rounded-lg sm:rounded-xl shrink-0 self-end sm:self-auto">
+                <Clock className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </div>
             </Card>
           </div>
 
           {/* SEARCH & FILTER CONTROLS */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border/80">
-            <div className="relative flex-1 max-w-sm w-full">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="flex flex-row items-center justify-between gap-2 p-2.5 sm:p-4 rounded-xl bg-card border border-border/80">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search quotation #, client or event..."
-                className="pl-9 h-9 text-xs"
+                placeholder="Search quotation #, client..."
+                className="pl-8 sm:pl-9 h-8 sm:h-9 text-xs"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center shrink-0">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectTrigger className="w-[105px] sm:w-[140px] h-8 sm:h-9 text-xs">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,8 +234,102 @@ function QuotationsPage() {
             </div>
           </div>
 
-          {/* TABLE */}
-          <div className="border border-border/80 rounded-xl bg-card overflow-hidden">
+          {/* MOBILE VIEW: QUOTATION CARDS */}
+          <div className="block sm:hidden space-y-3">
+            {filteredQuotations.length > 0 ? (
+              filteredQuotations.map((q) => (
+                <Card key={q.id} className="p-3.5 border-border/80 shadow-xs space-y-3 bg-card">
+                  {/* Top Bar: Quotation #, Status, and Total */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold font-serif text-sm text-[#8F702F] dark:text-[#E0BA6E] truncate">
+                        {q.quotationNumber || "QTN-001"}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`capitalize text-[9px] px-1.5 py-0 font-semibold shrink-0 ${
+                          q.status === "approved"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400"
+                            : q.status === "sent"
+                            ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {q.status || "draft"}
+                      </Badge>
+                    </div>
+                    <div className="font-bold text-sm text-foreground shrink-0">
+                      ₹{(q.total || 0).toLocaleString("en-IN")}
+                    </div>
+                  </div>
+
+                  {/* Event Title & Client info */}
+                  <div className="space-y-1">
+                    <div className="font-semibold text-foreground text-xs leading-snug">
+                      {q.eventTitle || "Banquet Event"}
+                    </div>
+                    <div className="text-muted-foreground text-[11px]">
+                      {q.clientName || "Client"} {q.clientPhone ? `• ${q.clientPhone}` : ""}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
+                      <span>Issued: {q.date || "-"}</span>
+                      <span>Valid: {q.validUntil || "-"}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenCreate(q.id)}
+                      className="text-xs h-8 border-[#C9A45C]/50 text-[#8C7443] hover:bg-[#FAF6EE] dark:hover:bg-[#8C7443]/10"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1" />
+                      Edit / Revise
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveQuotation(q);
+                        setPreviewOpen(true);
+                      }}
+                      className="text-xs h-8"
+                    >
+                      Preview / Print
+                    </Button>
+                  </div>
+                  {q.status !== "approved" && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        updateQuotationStatus(q.id, "approved");
+                        toast.success(`Quotation ${q.quotationNumber} approved!`, {
+                          description: `Event "${q.eventTitle}" is now Confirmed in Events calendar.`,
+                        });
+                      }}
+                      className="w-full text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      Confirm Event
+                    </Button>
+                  )}
+                </Card>
+              ))
+            ) : (
+              <div className="p-8 text-center text-muted-foreground bg-card border border-border/80 rounded-xl">
+                <FileText className="w-7 h-7 mx-auto mb-2 opacity-40" />
+                <div className="font-semibold text-foreground text-xs">No Quotations Found</div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Draft your first client quotation using the button above.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* DESKTOP VIEW: TABLE */}
+          <div className="hidden sm:block border border-border/80 rounded-xl bg-card overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead className="bg-muted text-muted-foreground font-semibold border-b border-border/60">
                 <tr>
