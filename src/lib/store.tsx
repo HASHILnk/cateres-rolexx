@@ -96,6 +96,7 @@ interface OperationsContextType {
   ) => Quotation;
   updateQuotation: (id: string, updates: Partial<Quotation>) => void;
   updateQuotationStatus: (id: string, status: Quotation["status"]) => void;
+  deleteQuotation: (id: string) => void;
 
   // Transaction Actions
   addTransaction: (transaction: Omit<Transaction, "id">) => Transaction;
@@ -128,6 +129,25 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<BusinessProfile>(initialBusinessProfile);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Helper to purge unwanted duplicate drafts if an approved quotation already exists
+  const cleanDuplicateQuotations = (list: Quotation[]): Quotation[] => {
+    return list.filter((q) => {
+      if (q.quotationNumber === "ROX-2026-659") return false;
+      if (q.status === "draft") {
+        const hasApproved = list.some(
+          (other) =>
+            other.id !== q.id &&
+            other.status === "approved" &&
+            other.eventTitle &&
+            q.eventTitle &&
+            other.eventTitle.trim().toLowerCase() === q.eventTitle.trim().toLowerCase()
+        );
+        if (hasApproved) return false;
+      }
+      return true;
+    });
+  };
+
   // Client-side hydration from localStorage followed by backend API sync
   useEffect(() => {
     async function loadData() {
@@ -145,7 +165,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         if (storedEvents) setEvents(JSON.parse(storedEvents));
         if (storedStock) setStock(JSON.parse(storedStock));
         if (storedClients) setClients(JSON.parse(storedClients));
-        if (storedQuotations) setQuotations(JSON.parse(storedQuotations));
+        if (storedQuotations) setQuotations(cleanDuplicateQuotations(JSON.parse(storedQuotations)));
         if (storedTransactions) setTransactions(JSON.parse(storedTransactions));
         if (storedProfile) setProfile(JSON.parse(storedProfile));
       } catch (e) {
@@ -277,7 +297,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
               amount: Number(it.amount ?? 0),
             })),
           }));
-          setQuotations(mappedQuotations);
+          setQuotations(cleanDuplicateQuotations(mappedQuotations));
         }
 
         if (liveTransactions.status === "fulfilled" && Array.isArray(liveTransactions.value)) {
@@ -972,6 +992,11 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
       .catch((err) => console.warn("Could not sync quotation update to API:", err));
   };
 
+  const deleteQuotation = (id: string) => {
+    setQuotations((prev) => prev.filter((q) => q.id !== id));
+    api.quotations.delete(id).catch((err) => console.warn("Could not sync quotation deletion to API:", err));
+  };
+
   const addTransaction = (
     txnData: Omit<Transaction, "id">
   ): Transaction => {
@@ -1075,6 +1100,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         createQuotation,
         updateQuotation,
         updateQuotationStatus,
+        deleteQuotation,
         addTransaction,
         updateProfile,
         resetToInitialData,

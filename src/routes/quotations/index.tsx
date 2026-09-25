@@ -24,6 +24,7 @@ import {
   Clock,
   CheckCircle2,
   Edit2,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/quotations/")({
 });
 
 function QuotationsPage() {
-  const { quotations, events, clients, createQuotation, updateQuotationStatus } =
+  const { quotations, events, clients, createQuotation, updateQuotationStatus, deleteQuotation } =
     useOperations();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -278,12 +279,12 @@ function QuotationsPage() {
                   </div>
 
                   {/* Actions Row */}
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
+                  <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleOpenCreate(q.id)}
-                      className="text-xs h-8 border-[#C9A45C]/50 text-[#8C7443] hover:bg-[#FAF6EE] dark:hover:bg-[#8C7443]/10"
+                      className="flex-1 text-xs h-8 border-[#C9A45C]/50 text-[#8C7443] hover:bg-[#FAF6EE] dark:hover:bg-[#8C7443]/10"
                     >
                       <Edit2 className="w-3.5 h-3.5 mr-1" />
                       Edit / Revise
@@ -295,9 +296,23 @@ function QuotationsPage() {
                         setActiveQuotation(q);
                         setPreviewOpen(true);
                       }}
-                      className="text-xs h-8"
+                      className="flex-1 text-xs h-8"
                     >
                       Preview / Print
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete quotation ${q.quotationNumber}?`)) {
+                          deleteQuotation(q.id);
+                          toast.success(`Quotation ${q.quotationNumber} deleted`);
+                        }
+                      }}
+                      className="text-xs h-8 px-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      title="Delete Quotation"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                   {q.status !== "approved" && (
@@ -412,6 +427,20 @@ function QuotationsPage() {
                           className="text-xs h-8"
                         >
                           Preview / Print
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete quotation ${q.quotationNumber}?`)) {
+                              deleteQuotation(q.id);
+                              toast.success(`Quotation ${q.quotationNumber} deleted`);
+                            }
+                          }}
+                          className="text-xs h-8 px-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          title="Delete Quotation"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </td>
                     </tr>

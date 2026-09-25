@@ -116,10 +116,32 @@ function EventWorkspacePage() {
     );
   }
 
-  // Linked quotation or fallback
-  const quotation = quotations.find(
-    (q) => q.id === event.quotationId || q.eventId === event.id
-  );
+  // Match linked quotation by quotationId, eventId, eventTitle, or client info (always prioritizing approved quotations)
+  const quotation = React.useMemo(() => {
+    if (event.quotationId) {
+      const q = quotations.find((it) => it.id === event.quotationId);
+      if (q) return q;
+    }
+    const directMatches = quotations.filter((it) => it.eventId === event.id);
+    if (directMatches.length > 0) {
+      return directMatches.find((it) => it.status === "approved") || directMatches[0];
+    }
+    const titleMatches = quotations.filter(
+      (it) => it.eventTitle && event.title && it.eventTitle.trim().toLowerCase() === event.title.trim().toLowerCase()
+    );
+    if (titleMatches.length > 0) {
+      return titleMatches.find((it) => it.status === "approved") || titleMatches[0];
+    }
+    const clientMatches = quotations.filter(
+      (it) =>
+        (it.clientPhone && event.clientPhone && it.clientPhone.replace(/\D/g, "") === event.clientPhone.replace(/\D/g, "")) ||
+        (it.clientName && event.clientName && it.clientName.trim().toLowerCase() === event.clientName.trim().toLowerCase())
+    );
+    if (clientMatches.length > 0) {
+      return clientMatches.find((it) => it.status === "approved") || clientMatches[0];
+    }
+    return null;
+  }, [event, quotations]);
 
   // Financial calculations
   const totalExpenses = event.expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -172,56 +194,6 @@ function EventWorkspacePage() {
     setExpPaidTo("");
     setExpenseModalOpen(false);
     toast.success("Expense logged to event ledger");
-  };
-
-  const handleCreateQuotationForEvent = () => {
-    const defaultItems: QuotationLineItem[] = [
-      {
-        id: `qi-${Date.now()}-1`,
-        description: `${event.packageTier} Catering Feast (${event.guestCount} Guests)`,
-        category: "Food & Beverage",
-        qty: event.guestCount,
-        unitPrice: Math.round((event.budget * 0.8) / event.guestCount),
-        amount: Math.round(event.budget * 0.8),
-      },
-      {
-        id: `qi-${Date.now()}-2`,
-        description: "Chafing Dish, Crockery & Silverware Service Setup",
-        category: "Tableware",
-        qty: 1,
-        unitPrice: Math.round(event.budget * 0.1),
-        amount: Math.round(event.budget * 0.1),
-      },
-      {
-        id: `qi-${Date.now()}-3`,
-        description: "Hospitality Staff & Logistics Transport",
-        category: "Service",
-        qty: 1,
-        unitPrice: Math.round(event.budget * 0.1),
-        amount: Math.round(event.budget * 0.1),
-      },
-    ];
-
-    const subtotal = defaultItems.reduce((sum, i) => sum + i.amount, 0);
-    const tax = Math.round(subtotal * 0.18);
-
-    const newQ = createQuotation({
-      eventId: event.id,
-      eventTitle: event.title,
-      clientName: event.clientName,
-      clientPhone: event.clientPhone,
-      clientEmail: event.clientEmail || undefined,
-      date: event.date,
-      validUntil: event.date,
-      items: defaultItems,
-      subtotal,
-      discountPercentage: 0,
-      taxPercentage: 18,
-      total: subtotal + tax,
-      status: "draft",
-    });
-
-    toast.success(`Generated official quotation ${newQ.quotationNumber}!`);
   };
 
   const DEFAULT_ROYAL_COURSES = [
@@ -396,8 +368,8 @@ function EventWorkspacePage() {
               <MessageCircle className="w-4 h-4" /> WhatsApp Client
             </a>
 
-            {quotation ? (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {quotation && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -406,21 +378,20 @@ function EventWorkspacePage() {
                 >
                   <Edit2 className="w-3.5 h-3.5 text-[#C5A059]" /> Edit / Revise Quotation
                 </Button>
-                <Button
-                  onClick={() => setQuotationPreviewOpen(true)}
-                  className="bg-gradient-to-r from-[#C5A059] to-[#9A7B38] text-black font-semibold text-xs gap-1.5"
-                >
-                  <FileText className="w-4 h-4" /> View Quotation
-                </Button>
-              </div>
-            ) : (
+              )}
               <Button
-                onClick={handleCreateQuotationForEvent}
-                className="bg-gradient-to-r from-[#C5A059] to-[#9A7B38] text-black font-semibold text-xs gap-1.5"
+                onClick={() => {
+                  if (quotation) {
+                    setQuotationPreviewOpen(true);
+                  } else {
+                    router.navigate({ href: `/quotations` });
+                  }
+                }}
+                className="bg-gradient-to-r from-[#C5A059] to-[#9A7B38] text-black font-semibold text-xs gap-1.5 shadow-sm"
               >
-                <Plus className="w-4 h-4" /> Create Quotation
+                <FileText className="w-4 h-4" /> View Official Quotation
               </Button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -840,9 +811,10 @@ function EventWorkspacePage() {
                     </Button>
                     <Button
                       onClick={() => setQuotationPreviewOpen(true)}
-                      className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs"
+                      className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs gap-1.5"
                     >
-                      Open Branded Preview
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>View Official Quotation</span>
                     </Button>
                   </div>
                 </CardHeader>
@@ -908,16 +880,15 @@ function EventWorkspacePage() {
             ) : (
               <div className="p-12 text-center bg-card rounded-2xl border border-dashed border-border/80 space-y-3">
                 <FileText className="w-10 h-10 text-muted-foreground mx-auto opacity-40" />
-                <h3 className="font-bold text-base">No Quotation Generated</h3>
+                <h3 className="font-bold text-base">View Official Quotation</h3>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Generate a luxury itemized estimate for {event.clientName} to
-                  share via WhatsApp or print.
+                  Access the official itemized catering quotation bill for {event.clientName}.
                 </p>
                 <Button
-                  onClick={handleCreateQuotationForEvent}
+                  onClick={() => router.navigate({ href: `/quotations` })}
                   className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs gap-1.5"
                 >
-                  <Plus className="w-4 h-4" /> Generate Official Quotation
+                  <FileText className="w-4 h-4" /> View Official Quotation
                 </Button>
               </div>
             )}
