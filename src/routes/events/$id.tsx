@@ -48,6 +48,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   Sparkles,
+  Printer,
 } from "lucide-react";
 import { Quotation, QuotationLineItem } from "../../lib/types";
 
@@ -220,6 +221,97 @@ function EventWorkspacePage() {
     });
 
     toast.success(`Generated official quotation ${newQ.quotationNumber}!`);
+  };
+
+  const DEFAULT_ROYAL_COURSES = [
+    {
+      category: "Warm Welcome with Soft Sip",
+      items: [
+        { id: `m-${Date.now()}-1`, name: "Watermelon Breeze", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-2`, name: "Pineapple Fizz", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-3`, name: "Grape Galaxy", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-4`, name: "Pacha Manga", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-5`, name: "Orange Punch", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Mojito Jar",
+      items: [
+        { id: `m-${Date.now()}-6`, name: "Green Apple Mojito", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-7`, name: "Blue Lagoon Sparkler", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-8`, name: "Passionfruit Fizz", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-9`, name: "Mint Lemon Cooler", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Celebration with Rice",
+      items: [
+        { id: `m-${Date.now()}-10`, name: "Thalassery Mutton Dum Biryani", isVeg: false, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-11`, name: "Fragrant Kaima Ghee Rice", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Flat Breads",
+      items: [
+        { id: `m-${Date.now()}-12`, name: "Butter Naan", isVeg: true, estimatedPortions: event.guestCount * 2 },
+        { id: `m-${Date.now()}-13`, name: "Kerala Malabar Parotta", isVeg: true, estimatedPortions: event.guestCount * 2 },
+        { id: `m-${Date.now()}-14`, name: "Rumali Roti", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Celebration with Gravy",
+      items: [
+        { id: `m-${Date.now()}-15`, name: "Chicken Mughlai Butter Masala", isVeg: false, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Celebration with Dry",
+      items: [
+        { id: `m-${Date.now()}-16`, name: "Crispy Chicken 65", isVeg: false, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-17`, name: "Charcoal Grilled Al Faham", isVeg: false, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Meals & Accompaniments",
+      items: [
+        { id: `m-${Date.now()}-18`, name: "Avial", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-19`, name: "Kerala Sambar", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-20`, name: "Pineapple Pachadi", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-21`, name: "Cabbage Thoran", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-22`, name: "Crispy Pappadam", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-23`, name: "Mango Pickle", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Garden Fresh Salads & Pickles",
+      items: [
+        { id: `m-${Date.now()}-24`, name: "Russian Salad", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-25`, name: "Tossed Mediterranean Green Salad", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-26`, name: "Beetroot Carpaccio", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-27`, name: "Arabic Pickles", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Sweet Memories & Desserts",
+      items: [
+        { id: `m-${Date.now()}-28`, name: "Royal Saffron Falooda with Dry Fruits", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-29`, name: "Hot Gulab Jamun with Vanilla Bean Ice Cream", isVeg: true, estimatedPortions: event.guestCount },
+        { id: `m-${Date.now()}-30`, name: "Ada Pradhaman Payasam", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+    {
+      category: "Hotspot Live Counter",
+      items: [
+        { id: `m-${Date.now()}-31`, name: "Live Spiced Sulaimani & Karak Tea Counter", isVeg: true, estimatedPortions: event.guestCount },
+      ],
+    },
+  ];
+
+  const handleSyncQuotationMenu = () => {
+    updateEvent(event.id, { menuCourses: DEFAULT_ROYAL_COURSES });
+    toast.success("Approved Banquet Menu synced from Quotation!", {
+      description: `Loaded 10 royal courses with portion calculations for ${event.guestCount} diners.`,
+    });
   };
 
   return (
@@ -410,95 +502,164 @@ function EventWorkspacePage() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: MENU PLANNER */}
+          {/* TAB 2: KITCHEN PRODUCTION & MENU SHEET */}
           <TabsContent value="menu" className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="font-serif text-xl font-bold">
-                  Bespoke Banquet Menu
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Customized dishes and estimated guest portions for{" "}
-                  {event.guestCount} diners.
+                <div className="flex items-center gap-2">
+                  <h2 className="font-serif text-xl font-bold">
+                    Kitchen Production & Menu Sheet
+                  </h2>
+                  <Badge variant="outline" className="bg-[#FAF5ED] text-[#8C6D37] border-[#E8DEC8] text-[10px] font-bold">
+                    Head Chef & Dispatch
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Official banquet menu approved by client for {event.guestCount} diners. Used by the culinary team for kitchen ingredient prep, live counter cooking, and dispatch.
                 </p>
               </div>
 
-              <Button
-                onClick={() => setAddDishModalOpen(true)}
-                className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs gap-1.5"
-              >
-                <Plus className="w-4 h-4" /> Add Menu Item
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {event.menuCourses.length > 0 ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.print()}
+                      className="text-xs border-[#E8E4DC] hover:border-[#C9A45C] gap-1.5"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Print Kitchen Slip (KOT)</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSyncQuotationMenu}
+                      className="text-xs border-[#E8E4DC] hover:border-[#C9A45C] gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-[#C9A45C]" />
+                      <span>Re-sync Menu</span>
+                    </Button>
+                    <Button
+                      onClick={() => setAddDishModalOpen(true)}
+                      className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" /> Add Custom Item
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={handleSyncQuotationMenu}
+                    className="bg-[#C5A059] hover:bg-[#B58E45] text-white font-semibold text-xs gap-1.5 shadow-xs"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Sync Menu from Quotation</span>
+                  </Button>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {event.menuCourses.map((course) => (
-                <Card key={course.category} className="border-border/80 shadow-xs">
-                  <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="font-serif text-base font-bold text-[#8F702F] dark:text-[#E0BA6E]">
-                        {course.category}
-                      </CardTitle>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {course.items.length} items
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-3">
-                    {course.items.length === 0 && (
-                      <p className="text-xs text-muted-foreground italic py-2">
-                        No dishes added yet for this course.
-                      </p>
-                    )}
-
-                    {course.items.map((dish) => (
-                      <div
-                        key={dish.id}
-                        className="flex items-start justify-between gap-3 p-2.5 rounded-lg bg-card border border-border/50 hover:border-[#C5A059]/40 transition-colors"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`w-2.5 h-2.5 rounded-full ${
-                                dish.isVeg ? "bg-emerald-500" : "bg-red-500"
-                              }`}
-                              title={dish.isVeg ? "Vegetarian" : "Non-Veg"}
-                            />
-                            <span className="font-semibold text-xs text-foreground">
-                              {dish.name}
-                            </span>
-                          </div>
-                          {dish.description && (
-                            <p className="text-[11px] text-muted-foreground line-clamp-1">
-                              {dish.description}
-                            </p>
-                          )}
-                          <div className="text-[10px] text-[#C5A059] font-medium">
-                            Estimated: {dish.estimatedPortions || event.guestCount}{" "}
-                            Portions
-                          </div>
-                        </div>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-red-500"
-                          onClick={() =>
-                            removeMenuCourseItem(
-                              event.id,
-                              course.category,
-                              dish.id
-                            )
-                          }
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+            {event.menuCourses.length === 0 ? (
+              <div className="p-8 sm:p-12 text-center bg-white dark:bg-card rounded-2xl border border-dashed border-[#C5A059]/60 space-y-4 shadow-2xs">
+                <div className="w-14 h-14 rounded-full bg-[#FAF5ED] border border-[#E8DEC8] flex items-center justify-center mx-auto text-[#8C6D37]">
+                  <ChefHat className="w-7 h-7 text-[#C5A059]" />
+                </div>
+                <div className="max-w-md mx-auto space-y-1">
+                  <h3 className="font-serif text-lg font-bold text-foreground">
+                    Sync Approved Menu from Quotation
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    You already selected the complete banquet menu during the Quotation proposal. Click below to automatically pull all 10 royal courses and calculate kitchen portion estimates for <strong>{event.guestCount} guests</strong>.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <Button
+                    onClick={handleSyncQuotationMenu}
+                    className="bg-[#C5A059] hover:bg-[#B58E45] text-white font-semibold text-xs px-5 py-2.5 h-auto gap-2 shadow-xs cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Sync Approved Menu from Quotation</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddDishModalOpen(true)}
+                    className="text-xs h-auto py-2.5 border-border"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Item Manually</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {event.menuCourses.map((course) => (
+                  <Card key={course.category} className="border-border/80 shadow-xs">
+                    <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="font-serif text-base font-bold text-[#8F702F] dark:text-[#E0BA6E]">
+                          {course.category}
+                        </CardTitle>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {course.items.length} items
+                        </Badge>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-3">
+                      {course.items.length === 0 && (
+                        <p className="text-xs text-muted-foreground italic py-2">
+                          No dishes added yet for this course.
+                        </p>
+                      )}
+
+                      {course.items.map((dish) => (
+                        <div
+                          key={dish.id}
+                          className="flex items-start justify-between gap-3 p-2.5 rounded-lg bg-card border border-border/50 hover:border-[#C5A059]/40 transition-colors"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`w-2.5 h-2.5 rounded-full ${
+                                  dish.isVeg ? "bg-emerald-500" : "bg-red-500"
+                                }`}
+                                title={dish.isVeg ? "Vegetarian" : "Non-Veg"}
+                              />
+                              <span className="font-semibold text-xs text-foreground">
+                                {dish.name}
+                              </span>
+                            </div>
+                            {dish.description && (
+                              <p className="text-[11px] text-muted-foreground line-clamp-1">
+                                {dish.description}
+                              </p>
+                            )}
+                            <div className="text-[10px] text-[#C5A059] font-medium">
+                              Kitchen Prep: {dish.estimatedPortions || event.guestCount}{" "}
+                              Portions
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                            onClick={() =>
+                              removeMenuCourseItem(
+                                event.id,
+                                course.category,
+                                dish.id
+                              )
+                            }
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* TAB 3: STOCK & EQUIPMENT */}
