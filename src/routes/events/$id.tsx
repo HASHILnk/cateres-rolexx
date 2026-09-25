@@ -371,12 +371,12 @@ function EventWorkspacePage() {
             <div className="flex items-center gap-2">
               {quotation && (
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={() => router.navigate({ href: `/quotations?action=create&id=${quotation.id}` })}
-                  className="border-[#C5A059]/60 text-[#FDFBF7] hover:bg-[#C5A059]/20 text-xs font-semibold gap-1.5"
+                  className="border border-[#C5A059] bg-[#22242C] hover:bg-[#2F323D] text-[#FDFBF7] hover:text-[#C5A059] text-xs font-semibold gap-1.5 shadow-sm transition-all"
                 >
-                  <Edit2 className="w-3.5 h-3.5 text-[#C5A059]" /> Edit / Revise Quotation
+                  <Edit2 className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <span>Edit / Revise Quotation</span>
                 </Button>
               )}
               <Button

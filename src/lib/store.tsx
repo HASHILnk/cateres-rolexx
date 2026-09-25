@@ -219,85 +219,179 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         }
 
         if (liveEvents.status === "fulfilled" && Array.isArray(liveEvents.value)) {
-          const mappedEvents: CateringEvent[] = liveEvents.value.map((e: any) => ({
-            id: e.id,
-            title: e.title,
-            clientName: e.client_name ?? e.clientName ?? "",
-            clientPhone: e.client_phone ?? e.clientPhone ?? "",
-            date: e.date,
-            time: e.time || "18:00",
-            guestCount: e.guest_count ?? e.guestCount ?? 0,
-            venue: e.venue || "",
-            eventType: (e.event_type ?? e.eventType ?? "Wedding") as any,
-            status: (e.status ?? "planning") as any,
-            packageTier: (e.package_tier ?? e.packageTier ?? "Royal Grandeur") as any,
-            budget: e.budget ?? 0,
-            advancePaid: e.advance_paid ?? e.advancePaid ?? 0,
-            specialInstructions: e.special_instructions ?? e.specialInstructions ?? "",
-            createdAt: e.created_at ?? e.createdAt ?? new Date().toISOString(),
-            readinessChecklist: (e.readiness_items || []).map((r: any) => ({
-              id: r.id,
-              category: r.category || "client",
-              label: r.label,
-              completed: !!r.is_done,
-              notes: r.notes || "",
-            })),
-            menuCourses: (e.menu_courses || []).map((m: any) => ({
-              category: m.category || "Main Course",
-              items: (m.items || []).map((it: any) => ({
-                id: it.id,
-                name: it.name,
-                isVeg: !it.dietary || it.dietary === "veg",
-                description: it.notes || "",
-              })),
-            })),
-            stockAllocations: (e.stock_allocations || []).map((sa: any) => ({
-              stockItemId: sa.stock_item_id,
-              stockItemName: sa.stock_item_name || "Equipment",
-              quantity: sa.quantity,
-              status: "reserved" as const,
-            })),
-            expenses: (e.expenses || []).map((ex: any) => ({
-              id: ex.id,
-              category: ex.category || "Miscellaneous",
-              amount: ex.amount,
-              description: ex.description || "",
-              date: ex.date,
-              paidTo: "Vendor",
-              paymentMethod: "Bank Transfer" as const,
-            })),
-            staffAssigned: [],
-          }));
-          setEvents(mappedEvents);
+          const localEventsStr = localStorage.getItem(STORAGE_KEYS.EVENTS);
+          const localEventsList: CateringEvent[] = localEventsStr ? JSON.parse(localEventsStr) : [];
+
+          const mappedEvents: CateringEvent[] = liveEvents.value.map((e: any) => {
+            const existingLocal = localEventsList.find((ev) => ev.id === e.id);
+
+            // Menu courses: use backend menu_courses_json / menu_courses / grouped menu_items, or fall back to existing local
+            let resolvedMenuCourses: MenuCourse[] = [];
+            if (e.menu_courses_json) {
+              try {
+                resolvedMenuCourses = JSON.parse(e.menu_courses_json);
+              } catch {
+                resolvedMenuCourses = [];
+              }
+            } else if (Array.isArray(e.menu_courses) && e.menu_courses.length > 0) {
+              resolvedMenuCourses = e.menu_courses;
+            } else if (Array.isArray(e.menu_items) && e.menu_items.length > 0) {
+              const groups: Record<string, MenuItem[]> = {};
+              for (const it of e.menu_items) {
+                const cat = it.category || "Main Course";
+                if (!groups[cat]) groups[cat] = [];
+                groups[cat].push({
+                  id: it.id,
+                  name: it.name,
+                  isVeg: !it.dietary || it.dietary === "veg",
+                  description: it.notes || "",
+                });
+              }
+              resolvedMenuCourses = Object.entries(groups).map(([category, items]) => ({
+                category: category as any,
+                items,
+              }));
+            }
+            if (resolvedMenuCourses.length === 0 && existingLocal?.menuCourses && existingLocal.menuCourses.length > 0) {
+              resolvedMenuCourses = existingLocal.menuCourses;
+            }
+
+            // Stock allocations: use backend or preserve local
+            let resolvedStockAllocations: StockAllocation[] = [];
+            if (e.stock_allocations_json) {
+              try {
+                resolvedStockAllocations = JSON.parse(e.stock_allocations_json);
+              } catch {
+                resolvedStockAllocations = [];
+              }
+            } else if (Array.isArray(e.stock_allocations) && e.stock_allocations.length > 0) {
+              resolvedStockAllocations = e.stock_allocations.map((sa: any) => ({
+                stockItemId: sa.stock_item_id,
+                stockItemName: sa.stock_item_name || "Equipment",
+                quantity: sa.quantity,
+                status: "reserved" as const,
+              }));
+            }
+            if (resolvedStockAllocations.length === 0 && existingLocal?.stockAllocations && existingLocal.stockAllocations.length > 0) {
+              resolvedStockAllocations = existingLocal.stockAllocations;
+            }
+
+            return {
+              id: e.id,
+              title: e.title,
+              clientName: e.client_name ?? e.clientName ?? existingLocal?.clientName ?? "",
+              clientPhone: e.client_phone ?? e.clientPhone ?? existingLocal?.clientPhone ?? "",
+              clientEmail: e.client_email ?? e.clientEmail ?? existingLocal?.clientEmail ?? "",
+              date: e.date,
+              time: e.time || existingLocal?.time || "18:00",
+              guestCount: e.guest_count ?? e.guestCount ?? existingLocal?.guestCount ?? 0,
+              venue: e.venue || existingLocal?.venue || "",
+              eventType: (e.event_type ?? e.eventType ?? existingLocal?.eventType ?? "Wedding") as any,
+              status: (e.status ?? existingLocal?.status ?? "planning") as any,
+              packageTier: (e.package_tier ?? e.packageTier ?? existingLocal?.packageTier ?? "Royal Grandeur") as any,
+              budget: e.budget ?? existingLocal?.budget ?? 0,
+              advancePaid: e.advance_paid ?? existingLocal?.advancePaid ?? 0,
+              specialInstructions: e.special_instructions ?? e.specialInstructions ?? existingLocal?.specialInstructions ?? "",
+              createdAt: e.created_at ?? e.createdAt ?? existingLocal?.createdAt ?? new Date().toISOString(),
+              quotationId: e.quotation_id || existingLocal?.quotationId,
+              readinessChecklist: (e.readiness_items && e.readiness_items.length > 0)
+                ? e.readiness_items.map((r: any) => {
+                    const localItem = existingLocal?.readinessChecklist?.find((li) => li.id === r.id || li.label === r.label);
+                    return {
+                      id: r.id,
+                      category: r.category || "client",
+                      label: r.label,
+                      completed: localItem ? localItem.completed : !!r.is_done,
+                      notes: r.notes || "",
+                    };
+                  })
+                : (existingLocal?.readinessChecklist || []),
+              menuCourses: resolvedMenuCourses,
+              stockAllocations: resolvedStockAllocations,
+              expenses: (e.expenses && e.expenses.length > 0)
+                ? e.expenses.map((ex: any) => ({
+                    id: ex.id,
+                    category: ex.category || "Miscellaneous",
+                    amount: ex.amount,
+                    description: ex.description || "",
+                    date: ex.date,
+                    paidTo: "Vendor",
+                    paymentMethod: "Bank Transfer" as const,
+                  }))
+                : (existingLocal?.expenses || []),
+              staffAssigned: existingLocal?.staffAssigned || [],
+              vehicleDetails: existingLocal?.vehicleDetails,
+            };
+          });
+
+          // PRESERVE ANY LOCAL EVENTS THAT ARE NOT YET IN THE BACKEND!
+          const backendIds = new Set(liveEvents.value.map((e: any) => e.id));
+          const missingLocalEvents = localEventsList.filter((ev) => !backendIds.has(ev.id));
+          const allMergedEvents = [...mappedEvents, ...missingLocalEvents];
+
+          setEvents(allMergedEvents);
+          localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(allMergedEvents));
         }
 
         if (liveQuotations.status === "fulfilled" && Array.isArray(liveQuotations.value)) {
-          const mappedQuotations: Quotation[] = liveQuotations.value.map((q: any) => ({
-            id: q.id,
-            quotationNumber: q.quotation_number ?? q.quotationNumber ?? "QTN-001",
-            eventId: q.event_id ?? q.eventId,
-            eventTitle: q.event_title ?? q.eventTitle ?? "Banquet Event",
-            clientName: q.client_name ?? q.clientName ?? "Client",
-            clientPhone: q.client_phone ?? q.clientPhone ?? "",
-            clientEmail: q.client_email ?? q.clientEmail ?? "",
-            date: q.date || new Date().toISOString().split("T")[0],
-            validUntil: q.valid_until ?? q.validUntil ?? "",
-            subtotal: Number(q.subtotal ?? 0),
-            taxPercentage: Number(q.tax_pct ?? q.taxPercentage ?? 5),
-            discountPercentage: Number(q.discount_pct ?? q.discountPercentage ?? 0),
-            total: Number(q.total ?? 0),
-            status: (q.status || "draft") as any,
-            notes: q.notes || "",
-            items: (q.items || []).map((it: any) => ({
-              id: it.id,
-              description: it.description || "",
-              category: it.category || "Food & Beverage",
-              qty: Number(it.quantity ?? it.qty ?? 1),
-              unitPrice: Number(it.unit_rate ?? it.unitPrice ?? 0),
-              amount: Number(it.amount ?? 0),
-            })),
-          }));
-          setQuotations(cleanDuplicateQuotations(mappedQuotations));
+          const localQuotsStr = localStorage.getItem(STORAGE_KEYS.QUOTATIONS);
+          const localQuotsList: Quotation[] = localQuotsStr ? JSON.parse(localQuotsStr) : [];
+
+          const mappedQuotations: Quotation[] = liveQuotations.value.map((q: any) => {
+            const existingLocal = localQuotsList.find((it) => it.id === q.id || it.quotationNumber === q.quotation_number);
+
+            let resolvedSections = existingLocal?.sections;
+            if (q.sections_json) {
+              try {
+                resolvedSections = JSON.parse(q.sections_json);
+              } catch {
+                // keep local
+              }
+            }
+
+            return {
+              id: q.id,
+              quotationNumber: q.quotation_number ?? q.quotationNumber ?? "QTN-001",
+              eventId: q.event_id ?? q.eventId ?? existingLocal?.eventId,
+              eventTitle: q.event_title ?? q.eventTitle ?? existingLocal?.eventTitle ?? "Banquet Event",
+              clientName: q.client_name ?? q.clientName ?? existingLocal?.clientName ?? "Client",
+              clientPhone: q.client_phone ?? q.clientPhone ?? existingLocal?.clientPhone ?? "",
+              clientEmail: q.client_email ?? q.clientEmail ?? existingLocal?.clientEmail ?? "",
+              date: q.date || existingLocal?.date || new Date().toISOString().split("T")[0],
+              validUntil: q.valid_until ?? q.validUntil ?? existingLocal?.validUntil ?? "",
+              subtotal: Number(q.subtotal ?? existingLocal?.subtotal ?? 0),
+              taxPercentage: Number(q.tax_pct ?? q.taxPercentage ?? existingLocal?.taxPercentage ?? 5),
+              discountPercentage: Number(q.discount_pct ?? q.discountPercentage ?? existingLocal?.discountPercentage ?? 0),
+              total: Number(q.total ?? existingLocal?.total ?? 0),
+              status: (q.status || existingLocal?.status || "draft") as any,
+              notes: q.notes || existingLocal?.notes || "",
+              venue: q.venue || existingLocal?.venue,
+              eventDate: q.event_date || existingLocal?.eventDate,
+              eventTiming: q.event_timing || existingLocal?.eventTiming,
+              guestCount: q.guest_count || existingLocal?.guestCount,
+              serviceType: q.service_type || existingLocal?.serviceType,
+              sections: resolvedSections,
+              items: (q.items && q.items.length > 0)
+                ? q.items.map((it: any) => ({
+                    id: it.id,
+                    description: it.description || "",
+                    category: it.category || "Food & Beverage",
+                    qty: Number(it.quantity ?? it.qty ?? 1),
+                    unitPrice: Number(it.unit_rate ?? it.unitPrice ?? 0),
+                    amount: Number(it.amount ?? 0),
+                  }))
+                : (existingLocal?.items || []),
+            };
+          });
+
+          // PRESERVE ANY LOCAL QUOTATIONS NOT YET IN BACKEND
+          const backendQuotIds = new Set(liveQuotations.value.map((q: any) => q.id));
+          const backendQuotNums = new Set(liveQuotations.value.map((q: any) => q.quotation_number));
+          const missingLocalQuots = localQuotsList.filter((q) => !backendQuotIds.has(q.id) && !backendQuotNums.has(q.quotationNumber));
+          const allMergedQuots = cleanDuplicateQuotations([...mappedQuotations, ...missingLocalQuots]);
+
+          setQuotations(allMergedQuots);
+          localStorage.setItem(STORAGE_KEYS.QUOTATIONS, JSON.stringify(allMergedQuots));
         }
 
         if (liveTransactions.status === "fulfilled" && Array.isArray(liveTransactions.value)) {
@@ -501,9 +595,15 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
   };
 
   const updateEvent = (id: string, updates: Partial<CateringEvent>) => {
-    setEvents((prev) =>
-      prev.map((ev) => (ev.id === id ? { ...ev, ...updates } : ev))
-    );
+    setEvents((prev) => {
+      const updated = prev.map((ev) => (ev.id === id ? { ...ev, ...updates } : ev));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Failed to persist updated event to localStorage:", e);
+      }
+      return updated;
+    });
 
     const p: any = {};
     if (updates.title !== undefined) p.title = updates.title;
@@ -518,6 +618,11 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     if (updates.budget !== undefined) p.budget = updates.budget;
     if (updates.advancePaid !== undefined) p.advance_paid = updates.advancePaid;
     if (updates.specialInstructions !== undefined) p.special_instructions = updates.specialInstructions;
+    if (updates.quotationId !== undefined) p.quotation_id = updates.quotationId;
+    if (updates.packageTier !== undefined) p.package_tier = updates.packageTier;
+    if (updates.menuCourses !== undefined) p.menu_courses_json = JSON.stringify(updates.menuCourses);
+    if (updates.stockAllocations !== undefined) p.stock_allocations_json = JSON.stringify(updates.stockAllocations);
+
     api.events.update(id, p).catch((err) => console.warn("Could not sync event update to API:", err));
   };
 
@@ -527,8 +632,8 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleReadinessItem = (eventId: string, itemId: string) => {
-    setEvents((prev) =>
-      prev.map((ev) => {
+    setEvents((prev) => {
+      const updated = prev.map((ev) => {
         if (ev.id !== eventId) return ev;
         const updatedChecklist = ev.readinessChecklist.map((item) =>
           item.id === itemId
@@ -536,8 +641,12 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
             : item
         );
         return { ...ev, readinessChecklist: updatedChecklist };
-      })
-    );
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
     api.events.toggleReadiness(eventId, itemId).catch((err) => console.warn("Could not sync readiness toggle:", err));
   };
 
@@ -545,16 +654,20 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     eventId: string,
     item: Omit<ReadinessItem, "id">
   ) => {
-    setEvents((prev) =>
-      prev.map((ev) => {
+    setEvents((prev) => {
+      const updated = prev.map((ev) => {
         if (ev.id !== eventId) return ev;
         const newItem: ReadinessItem = { ...item, id: `chk-${Date.now()}` };
         return {
           ...ev,
           readinessChecklist: [...ev.readinessChecklist, newItem],
         };
-      })
-    );
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
   };
 
   const addMenuCourseItem = (
@@ -562,27 +675,33 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     category: string,
     item: Omit<MenuItem, "id">
   ) => {
-    setEvents((prev) =>
-      prev.map((ev) => {
-        if (ev.id !== eventId) return ev;
-        const newItem: MenuItem = { ...item, id: `m-${Date.now()}` };
-        let categoryFound = false;
-        const updatedCourses = ev.menuCourses.map((c) => {
-          if (c.category === category) {
-            categoryFound = true;
-            return { ...c, items: [...c.items, newItem] };
-          }
-          return c;
-        });
-        if (!categoryFound) {
-          updatedCourses.push({
-            category: category as any,
-            items: [newItem],
-          });
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const newItem: MenuItem = { ...item, id: `m-${Date.now()}` };
+      let categoryFound = false;
+      const updatedCourses = ev.menuCourses.map((c) => {
+        if (c.category === category) {
+          categoryFound = true;
+          return { ...c, items: [...c.items, newItem] };
         }
-        return { ...ev, menuCourses: updatedCourses };
-      })
-    );
+        return c;
+      });
+      if (!categoryFound) {
+        updatedCourses.push({
+          category: category as any,
+          items: [newItem],
+        });
+      }
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, menuCourses: updatedCourses } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { menu_courses_json: JSON.stringify(updatedCourses) }).catch(() => {});
+      return updated;
+    });
   };
 
   const removeMenuCourseItem = (
@@ -590,23 +709,29 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     category: string,
     itemId: string
   ) => {
-    setEvents((prev) =>
-      prev.map((ev) => {
-        if (ev.id !== eventId) return ev;
-        const updatedCourses = ev.menuCourses
-          .map((c) => {
-            if (c.category === category) {
-              return {
-                ...c,
-                items: c.items.filter((i) => i.id !== itemId),
-              };
-            }
-            return c;
-          })
-          .filter((c) => c.items.length > 0);
-        return { ...ev, menuCourses: updatedCourses };
-      })
-    );
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const updatedCourses = ev.menuCourses
+        .map((c) => {
+          if (c.category === category) {
+            return {
+              ...c,
+              items: c.items.filter((i) => i.id !== itemId),
+            };
+          }
+          return c;
+        })
+        .filter((c) => c.items.length > 0);
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, menuCourses: updatedCourses } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { menu_courses_json: JSON.stringify(updatedCourses) }).catch(() => {});
+      return updated;
+    });
   };
 
   const allocateStockToEvent = (
@@ -617,76 +742,90 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     const stockItem = stock.find((s) => s.id === stockItemId);
     if (!stockItem) return;
 
-    setEvents((prev) =>
-      prev.map((ev) => {
-        if (ev.id !== eventId) return ev;
-        const existing = ev.stockAllocations.find(
-          (sa) => sa.stockItemId === stockItemId
-        );
-        let updatedAllocations: StockAllocation[];
-        const isShortage = stockItem.reservedQty + quantity > stockItem.totalQty;
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const existing = ev.stockAllocations.find((sa) => sa.stockItemId === stockItemId);
+      let updatedAllocations: StockAllocation[];
+      const isShortage = stockItem.reservedQty + quantity > stockItem.totalQty;
 
-        if (existing) {
-          updatedAllocations = ev.stockAllocations.map((sa) =>
-            sa.stockItemId === stockItemId
-              ? {
-                  ...sa,
-                  quantity: sa.quantity + quantity,
-                  status: isShortage ? "shortage" : "reserved",
-                }
-              : sa
-          );
-        } else {
-          updatedAllocations = [
-            ...ev.stockAllocations,
-            {
-              stockItemId,
-              stockItemName: stockItem.name,
-              quantity,
-              status: isShortage ? "shortage" : "reserved",
-            },
-          ];
-        }
-        return { ...ev, stockAllocations: updatedAllocations };
-      })
-    );
+      if (existing) {
+        updatedAllocations = ev.stockAllocations.map((sa) =>
+          sa.stockItemId === stockItemId
+            ? {
+                ...sa,
+                quantity: sa.quantity + quantity,
+                status: isShortage ? "shortage" : "reserved",
+              }
+            : sa
+        );
+      } else {
+        updatedAllocations = [
+          ...ev.stockAllocations,
+          {
+            stockItemId,
+            stockItemName: stockItem.name,
+            quantity,
+            status: isShortage ? "shortage" : "reserved",
+          },
+        ];
+      }
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, stockAllocations: updatedAllocations } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { stock_allocations_json: JSON.stringify(updatedAllocations) }).catch(() => {});
+      return updated;
+    });
 
     // Update stock reserved quantity
-    setStock((prev) =>
-      prev.map((s) =>
+    setStock((prev) => {
+      const updated = prev.map((s) =>
         s.id === stockItemId
           ? { ...s, reservedQty: s.reservedQty + quantity }
           : s
-      )
-    );
+      );
+      try {
+        localStorage.setItem(STORAGE_KEYS.STOCK, JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+    api.events.allocateStock(eventId, { stock_item_id: stockItemId, quantity }).catch(() => {});
   };
 
   const removeStockFromEvent = (eventId: string, stockItemId: string) => {
     let releasedQty = 0;
-    setEvents((prev) =>
-      prev.map((ev) => {
-        if (ev.id !== eventId) return ev;
-        const alloc = ev.stockAllocations.find(
-          (sa) => sa.stockItemId === stockItemId
-        );
-        if (alloc) releasedQty = alloc.quantity;
-        return {
-          ...ev,
-          stockAllocations: ev.stockAllocations.filter(
-            (sa) => sa.stockItemId !== stockItemId
-          ),
-        };
-      })
-    );
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const alloc = ev.stockAllocations.find((sa) => sa.stockItemId === stockItemId);
+      if (alloc) releasedQty = alloc.quantity;
+      const updatedAllocations = ev.stockAllocations.filter((sa) => sa.stockItemId !== stockItemId);
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, stockAllocations: updatedAllocations } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { stock_allocations_json: JSON.stringify(updatedAllocations) }).catch(() => {});
+      return updated;
+    });
 
     if (releasedQty > 0) {
-      setStock((prev) =>
-        prev.map((s) =>
+      setStock((prev) => {
+        const updated = prev.map((s) =>
           s.id === stockItemId
             ? { ...s, reservedQty: Math.max(0, s.reservedQty - releasedQty) }
             : s
-        )
-      );
+        );
+        try {
+          localStorage.setItem(STORAGE_KEYS.STOCK, JSON.stringify(updated));
+        } catch (err) {}
+        return updated;
+      });
+      api.events.removeStockAllocation(eventId, stockItemId).catch(() => {});
     }
   };
 
@@ -856,6 +995,13 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         discount_pct: quotData.discountPercentage,
         total: quotData.total,
         notes: quotData.notes || "",
+        event_id: newQuot.eventId || quotData.eventId,
+        sections_json: quotData.sections ? JSON.stringify(quotData.sections) : undefined,
+        venue: quotData.venue,
+        event_date: quotData.eventDate,
+        event_timing: quotData.eventTiming,
+        guest_count: quotData.guestCount,
+        service_type: quotData.serviceType,
         items: (quotData.items || []).map((it) => ({
           description: it.description,
           category: it.category || "Food & Beverage",
@@ -968,6 +1114,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     }
 
     // Sync to backend API
+    const updatedSections = updates.sections || q?.sections;
     api.quotations
       .update(id, {
         client_name: updates.clientName || q?.clientName,
@@ -981,6 +1128,13 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         discount_pct: updates.discountPercentage ?? q?.discountPercentage ?? 0,
         total: updates.total ?? q?.total ?? 0,
         notes: updates.notes ?? q?.notes ?? "",
+        event_id: eventId,
+        sections_json: updatedSections ? JSON.stringify(updatedSections) : undefined,
+        venue: updates.venue ?? q?.venue,
+        event_date: updates.eventDate ?? q?.eventDate,
+        event_timing: updates.eventTiming ?? q?.eventTiming,
+        guest_count: updates.guestCount ?? q?.guestCount,
+        service_type: updates.serviceType ?? q?.serviceType,
         items: (updates.items || q?.items || []).map((it) => ({
           description: it.description,
           category: it.category || "Food & Beverage",

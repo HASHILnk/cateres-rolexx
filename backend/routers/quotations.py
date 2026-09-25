@@ -40,6 +40,13 @@ def create_quotation(
         discount_pct=payload.discount_pct,
         total=payload.total,
         notes=payload.notes,
+        event_id=payload.event_id,
+        sections_json=payload.sections_json,
+        venue=payload.venue,
+        event_date=payload.event_date,
+        event_timing=payload.event_timing,
+        guest_count=payload.guest_count,
+        service_type=payload.service_type,
     )
     db.add(q)
     db.commit()
@@ -83,6 +90,20 @@ def update_quotation(
     q.discount_pct = payload.discount_pct
     q.total = payload.total
     q.notes = payload.notes
+    if payload.event_id is not None:
+        q.event_id = payload.event_id
+    if payload.sections_json is not None:
+        q.sections_json = payload.sections_json
+    if payload.venue is not None:
+        q.venue = payload.venue
+    if payload.event_date is not None:
+        q.event_date = payload.event_date
+    if payload.event_timing is not None:
+        q.event_timing = payload.event_timing
+    if payload.guest_count is not None:
+        q.guest_count = payload.guest_count
+    if payload.service_type is not None:
+        q.service_type = payload.service_type
 
     # Replace line items
     db.query(QuotationLineItem).filter(QuotationLineItem.quotation_id == quotation_id).delete()

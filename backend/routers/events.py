@@ -81,6 +81,10 @@ def create_event(
         budget=payload.budget,
         advance_paid=payload.advance_paid,
         menu_locked=payload.menu_locked,
+        package_tier=payload.package_tier or "Royal Grandeur",
+        quotation_id=payload.quotation_id,
+        menu_courses_json=payload.menu_courses_json,
+        stock_allocations_json=payload.stock_allocations_json,
         special_instructions=payload.special_instructions,
     )
     db.add(ev)

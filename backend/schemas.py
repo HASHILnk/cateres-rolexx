@@ -175,6 +175,10 @@ class CateringEventBase(BaseModel):
     budget: float = 0.0
     advance_paid: float = 0.0
     menu_locked: bool = False
+    package_tier: Optional[str] = "Royal Grandeur"
+    quotation_id: Optional[str] = None
+    menu_courses_json: Optional[str] = None
+    stock_allocations_json: Optional[str] = None
     special_instructions: Optional[str] = None
 
 
@@ -195,6 +199,10 @@ class CateringEventUpdate(BaseModel):
     budget: Optional[float] = None
     advance_paid: Optional[float] = None
     menu_locked: Optional[bool] = None
+    package_tier: Optional[str] = None
+    quotation_id: Optional[str] = None
+    menu_courses_json: Optional[str] = None
+    stock_allocations_json: Optional[str] = None
     special_instructions: Optional[str] = None
 
 
@@ -281,6 +289,13 @@ class QuotationBase(BaseModel):
     discount_pct: float = 0.0
     total: float = 0.0
     notes: Optional[str] = None
+    event_id: Optional[str] = None
+    sections_json: Optional[str] = None
+    venue: Optional[str] = None
+    event_date: Optional[str] = None
+    event_timing: Optional[str] = None
+    guest_count: Optional[int] = None
+    service_type: Optional[str] = None
 
 
 class QuotationCreate(QuotationBase):

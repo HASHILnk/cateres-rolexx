@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base, SessionLocal
+from .database import engine, Base, SessionLocal, migrate_database
 from .seed import seed_database
 from .routers import (
     auth,
@@ -19,6 +19,8 @@ from .routers import (
 async def lifespan(app: FastAPI):
     # Create all database tables
     Base.metadata.create_all(bind=engine)
+    # Apply schema migrations for new columns
+    migrate_database(engine)
     # Seed default ADMIN/ADMIN and initial database records
     db = SessionLocal()
     try:

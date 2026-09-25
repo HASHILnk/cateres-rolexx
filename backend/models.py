@@ -62,6 +62,10 @@ class CateringEvent(Base):
     budget = Column(Float, default=0.0)
     advance_paid = Column(Float, default=0.0)
     menu_locked = Column(Boolean, default=False)
+    package_tier = Column(String(50), default="Royal Grandeur")
+    quotation_id = Column(String(50), nullable=True)
+    menu_courses_json = Column(Text, nullable=True)
+    stock_allocations_json = Column(Text, nullable=True)
     special_instructions = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -164,6 +168,13 @@ class Quotation(Base):
     discount_pct = Column(Float, default=0.0)
     total = Column(Float, default=0.0)
     notes = Column(Text, nullable=True)
+    event_id = Column(String(50), nullable=True)
+    sections_json = Column(Text, nullable=True)
+    venue = Column(String(200), nullable=True)
+    event_date = Column(String(50), nullable=True)
+    event_timing = Column(String(50), nullable=True)
+    guest_count = Column(Integer, nullable=True)
+    service_type = Column(String(100), nullable=True)
 
     items = relationship(
         "QuotationLineItem", back_populates="quotation", cascade="all, delete-orphan"
