@@ -52,7 +52,7 @@ function getEventStatusBadge(status: string) {
     case "cancelled":
       return { label: "Cancelled", style: "bg-[#FDE8E8] text-[#DC2626] border-[#FECACA]" };
     case "completed":
-      return { label: "Completed", style: "bg-[#F3F4F6] text-[#4B5563] border-[#E5E7EB]" };
+      return { label: "Completed", style: "bg-[#EAF5EE] text-[#1E7E34] border-[#C6ECD2]" };
     default:
       return { label: status || "Planning", style: "bg-[#FEF3D6] text-[#B45309] border-[#FDE68A]" };
   }
@@ -113,6 +113,14 @@ function DashboardPage() {
     return events
       .filter((ev) => ev.date >= todayDateStr && ev.status !== "completed" && ev.status !== "cancelled")
       .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 5);
+  }, [events, todayDateStr]);
+
+  // Completed events dynamically derived
+  const completedEvents = useMemo(() => {
+    return events
+      .filter((ev) => ev.status === "completed" || (ev.date < todayDateStr && ev.status !== "cancelled"))
+      .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 5);
   }, [events, todayDateStr]);
 
@@ -312,7 +320,7 @@ function DashboardPage() {
               to="/events"
               className="text-[10px] sm:text-[11px] text-[#606570] hover:text-[#111215] flex items-center justify-between gap-1 mt-1.5 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-[#F2EEE6] transition-colors"
             >
-              <span className="truncate">{upcomingEvents.length} upcoming</span>
+              <span className="truncate">{upcomingEvents.length} upcoming • {completedEvents.length} completed</span>
               <ChevronRight className="w-3 h-3 text-[#8E94A0] shrink-0" />
             </Link>
           </div>
@@ -556,73 +564,151 @@ function DashboardPage() {
         </section>
 
         {/* ================================================== */}
-        {/* 4. LOWER SECTION: UPCOMING EVENTS + STOCK AT GLANCE*/}
+        {/* 4. LOWER SECTION: UPCOMING & COMPLETED EVENTS + STOCK */}
         {/* ================================================== */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* LEFT: UPCOMING EVENTS (col-span-12 lg:col-span-7) */}
-          <div className="lg:col-span-7 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="font-serif text-lg font-bold text-[#111215]">
-                Upcoming Events
-              </h2>
-              <Link
-                to="/events"
-                className="text-xs font-medium text-[#70757F] hover:text-[#111215] flex items-center gap-1 transition-colors"
-              >
-                View All <ArrowRight className="w-3 h-3" />
-              </Link>
+          {/* LEFT: UPCOMING & COMPLETED EVENTS (col-span-12 lg:col-span-7) */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* UPCOMING EVENTS */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-serif text-lg font-bold text-[#111215]">
+                    Upcoming Events
+                  </h2>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#FAF5ED] text-[#8C7443] border border-[#E8DEC8]">
+                    {upcomingEvents.length}
+                  </span>
+                </div>
+                <Link
+                  to="/events"
+                  className="text-xs font-medium text-[#70757F] hover:text-[#111215] flex items-center gap-1 transition-colors"
+                >
+                  View All <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <div className="rolex-card p-4 divide-y divide-[#F0EDE6]">
+                {upcomingEvents.length > 0 ? (
+                  upcomingEvents.map((ev) => {
+                    const statusInfo = getEventStatusBadge(ev.status);
+                    return (
+                      <div
+                        key={ev.id}
+                        onClick={() => router.navigate({ to: "/events/$id", params: { id: ev.id } })}
+                        className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3 hover:bg-neutral-50/70 p-2 rounded-lg transition-colors cursor-pointer group"
+                      >
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <div className="text-xs font-bold text-[#111215] group-hover:text-[#B58E45] transition-colors truncate">
+                            {ev.title}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#70757F]">
+                            <span>📅 {formatEventDate(ev.date)}</span>
+                            {ev.venue && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate">📍 {ev.venue}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          <div className="hidden sm:block text-[11px] text-[#70757F]">
+                            👥 {ev.guestCount} Guests
+                          </div>
+                          <span
+                            className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${statusInfo.style}`}
+                          >
+                            {statusInfo.label}
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-[#8E94A0]" />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-6 flex flex-col items-center justify-center text-center">
+                    <div className="w-10 h-10 rounded-full bg-[#FAF5ED] text-[#8C7443] flex items-center justify-center mb-2">
+                      <CalendarDays className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-bold text-[#111215]">No Upcoming Events</p>
+                    <p className="text-[11px] text-[#70757F] mt-0.5 max-w-xs">
+                      Upcoming banquets will be listed here chronologically once scheduled.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="rolex-card p-4 divide-y divide-[#F0EDE6]">
-              {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((ev) => {
-                  const statusInfo = getEventStatusBadge(ev.status);
-                  return (
-                    <div
-                      key={ev.id}
-                      onClick={() => router.navigate({ to: "/events/$id", params: { id: ev.id } })}
-                      className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3 hover:bg-neutral-50/70 p-2 rounded-lg transition-colors cursor-pointer group"
-                    >
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="text-xs font-bold text-[#111215] group-hover:text-[#B58E45] transition-colors truncate">
-                          {ev.title}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#70757F]">
-                          <span>📅 {formatEventDate(ev.date)}</span>
-                          {ev.venue && (
-                            <>
-                              <span>•</span>
-                              <span className="truncate">📍 {ev.venue}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="hidden sm:block text-[11px] text-[#70757F]">
-                          👥 {ev.guestCount} Guests
-                        </div>
-                        <span
-                          className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${statusInfo.style}`}
-                        >
-                          {statusInfo.label}
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-[#8E94A0]" />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-6 flex flex-col items-center justify-center text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#FAF5ED] text-[#8C7443] flex items-center justify-center mb-2">
-                    <CalendarDays className="w-5 h-5" />
-                  </div>
-                  <p className="text-xs font-bold text-[#111215]">No Upcoming Events</p>
-                  <p className="text-[11px] text-[#70757F] mt-0.5 max-w-xs">
-                    Upcoming banquets will be listed here chronologically once scheduled.
-                  </p>
+            {/* COMPLETED EVENTS */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-serif text-lg font-bold text-[#111215]">
+                    Completed Events
+                  </h2>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EAF5EE] text-[#2E7D48] border border-[#C6ECD2]">
+                    {completedEvents.length}
+                  </span>
                 </div>
-              )}
+                <Link
+                  to="/events"
+                  className="text-xs font-medium text-[#70757F] hover:text-[#111215] flex items-center gap-1 transition-colors"
+                >
+                  View All <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <div className="rolex-card p-4 divide-y divide-[#F0EDE6]">
+                {completedEvents.length > 0 ? (
+                  completedEvents.map((ev) => {
+                    return (
+                      <div
+                        key={ev.id}
+                        onClick={() => router.navigate({ to: "/events/$id", params: { id: ev.id } })}
+                        className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3 hover:bg-neutral-50/70 p-2 rounded-lg transition-colors cursor-pointer group"
+                      >
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <div className="text-xs font-bold text-[#111215] group-hover:text-[#B58E45] transition-colors truncate">
+                            {ev.title}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#70757F]">
+                            <span>📅 {formatEventDate(ev.date)}</span>
+                            {ev.venue && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate">📍 {ev.venue}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          <div className="hidden sm:block text-[11px] text-[#70757F]">
+                            👥 {ev.guestCount} Guests
+                          </div>
+                          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#EAF5EE] text-[#2E7D48] border border-[#C6ECD2] inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-[#2E7D48]" />
+                            <span>Completed</span>
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-[#8E94A0]" />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-6 flex flex-col items-center justify-center text-center">
+                    <div className="w-10 h-10 rounded-full bg-[#EAF5EE] text-[#2E7D48] flex items-center justify-center mb-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-bold text-[#111215]">No Completed Events Yet</p>
+                    <p className="text-[11px] text-[#70757F] mt-0.5 max-w-xs">
+                      Past banquets and closed functions will appear here.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
