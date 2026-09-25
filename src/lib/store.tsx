@@ -17,6 +17,7 @@ import {
   MenuItem,
   Expense,
   StockAllocation,
+  PostEventTask,
 } from "./types";
 import {
   initialBusinessProfile,
@@ -59,6 +60,7 @@ interface OperationsContextType {
     eventId: string,
     item: Omit<ReadinessItem, "id">
   ) => void;
+  deleteReadinessItem: (eventId: string, itemId: string) => void;
   addMenuCourseItem: (
     eventId: string,
     category: string,
@@ -76,6 +78,19 @@ interface OperationsContextType {
   ) => void;
   removeStockFromEvent: (eventId: string, stockItemId: string) => void;
   logEventExpense: (eventId: string, expense: Omit<Expense, "id">) => void;
+  assignStaffToEvent: (
+    eventId: string,
+    staff: Omit<StaffAssignment, "id">
+  ) => void;
+  removeStaffFromEvent: (eventId: string, staffId: string) => void;
+  updateVehicleDetails: (
+    eventId: string,
+    details: CateringEvent["vehicleDetails"]
+  ) => void;
+  togglePostEventTask: (eventId: string, taskId: string) => void;
+  addPostEventTask: (eventId: string, task: Omit<PostEventTask, "id">) => void;
+  deletePostEventTask: (eventId: string, taskId: string) => void;
+  resetPostEventTasks: (eventId: string) => void;
 
   // Stock Actions
   addStockItem: (
@@ -319,8 +334,32 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
                     paymentMethod: "Bank Transfer" as const,
                   }))
                 : (existingLocal?.expenses || []),
-              staffAssigned: existingLocal?.staffAssigned || [],
-              vehicleDetails: existingLocal?.vehicleDetails,
+              staffAssigned: (() => {
+                if (e.staff_assigned_json) {
+                  try {
+                    const parsed = JSON.parse(e.staff_assigned_json);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                  } catch {}
+                }
+                return existingLocal?.staffAssigned || [];
+              })(),
+              vehicleDetails: (() => {
+                if (e.vehicle_details_json) {
+                  try {
+                    return JSON.parse(e.vehicle_details_json);
+                  } catch {}
+                }
+                return existingLocal?.vehicleDetails;
+              })(),
+              postEventTasks: (() => {
+                if (e.post_event_checklist_json) {
+                  try {
+                    const parsed = JSON.parse(e.post_event_checklist_json);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                  } catch {}
+                }
+                return existingLocal?.postEventTasks || [];
+              })(),
             };
           });
 
@@ -622,6 +661,9 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     if (updates.packageTier !== undefined) p.package_tier = updates.packageTier;
     if (updates.menuCourses !== undefined) p.menu_courses_json = JSON.stringify(updates.menuCourses);
     if (updates.stockAllocations !== undefined) p.stock_allocations_json = JSON.stringify(updates.stockAllocations);
+    if (updates.staffAssigned !== undefined) p.staff_assigned_json = JSON.stringify(updates.staffAssigned);
+    if (updates.vehicleDetails !== undefined) p.vehicle_details_json = JSON.stringify(updates.vehicleDetails);
+    if (updates.postEventTasks !== undefined) p.post_event_checklist_json = JSON.stringify(updates.postEventTasks);
 
     api.events.update(id, p).catch((err) => console.warn("Could not sync event update to API:", err));
   };
@@ -654,10 +696,10 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     eventId: string,
     item: Omit<ReadinessItem, "id">
   ) => {
+    const newItem: ReadinessItem = { ...item, id: `chk-${Date.now()}` };
     setEvents((prev) => {
       const updated = prev.map((ev) => {
         if (ev.id !== eventId) return ev;
-        const newItem: ReadinessItem = { ...item, id: `chk-${Date.now()}` };
         return {
           ...ev,
           readinessChecklist: [...ev.readinessChecklist, newItem],
@@ -668,6 +710,27 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
       } catch (err) {}
       return updated;
     });
+    api.events.addReadiness(eventId, {
+      category: item.category,
+      label: item.label,
+      is_done: item.completed,
+      priority: "medium",
+    }).catch((err) => console.warn("Could not sync readiness add:", err));
+  };
+
+  const deleteReadinessItem = (eventId: string, itemId: string) => {
+    setEvents((prev) => {
+      const updated = prev.map((ev) => {
+        if (ev.id !== eventId) return ev;
+        const updatedChecklist = ev.readinessChecklist.filter((item) => item.id !== itemId);
+        return { ...ev, readinessChecklist: updatedChecklist };
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+    api.events.deleteReadiness(eventId, itemId).catch((err) => console.warn("Could not sync readiness deletion:", err));
   };
 
   const addMenuCourseItem = (
@@ -827,6 +890,140 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
       });
       api.events.removeStockAllocation(eventId, stockItemId).catch(() => {});
     }
+  };
+
+  const assignStaffToEvent = (
+    eventId: string,
+    staff: Omit<StaffAssignment, "id">
+  ) => {
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const newStaff: StaffAssignment = { ...staff, id: `stf-${Date.now()}` };
+      const updatedStaff = [...(ev.staffAssigned || []), newStaff];
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, staffAssigned: updatedStaff } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { staff_assigned_json: JSON.stringify(updatedStaff) }).catch(() => {});
+      return updated;
+    });
+  };
+
+  const removeStaffFromEvent = (eventId: string, staffId: string) => {
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const updatedStaff = (ev.staffAssigned || []).filter((s) => s.id !== staffId);
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, staffAssigned: updatedStaff } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { staff_assigned_json: JSON.stringify(updatedStaff) }).catch(() => {});
+      return updated;
+    });
+  };
+
+  const updateVehicleDetails = (
+    eventId: string,
+    details: CateringEvent["vehicleDetails"]
+  ) => {
+    setEvents((prev) => {
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, vehicleDetails: details } : e));
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Storage error:", err);
+      }
+      api.events.update(eventId, { vehicle_details_json: JSON.stringify(details) }).catch(() => {});
+      return updated;
+    });
+  };
+
+  const togglePostEventTask = (eventId: string, taskId: string) => {
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const tasks = ev.postEventTasks || [];
+      const updatedTasks = tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              completed: !t.completed,
+              completedAt: !t.completed ? new Date().toISOString() : undefined,
+            }
+          : t
+      );
+      const updated = prev.map((e) =>
+        e.id === eventId ? { ...e, postEventTasks: updatedTasks } : e
+      );
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      api.events
+        .update(eventId, { post_event_checklist_json: JSON.stringify(updatedTasks) })
+        .catch(() => {});
+      return updated;
+    });
+  };
+
+  const addPostEventTask = (
+    eventId: string,
+    task: Omit<PostEventTask, "id">
+  ) => {
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const newTask: PostEventTask = { ...task, id: `pet-${Date.now()}` };
+      const updatedTasks = [...(ev.postEventTasks || []), newTask];
+      const updated = prev.map((e) =>
+        e.id === eventId ? { ...e, postEventTasks: updatedTasks } : e
+      );
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      api.events
+        .update(eventId, { post_event_checklist_json: JSON.stringify(updatedTasks) })
+        .catch(() => {});
+      return updated;
+    });
+  };
+
+  const deletePostEventTask = (eventId: string, taskId: string) => {
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === eventId);
+      if (!ev) return prev;
+      const updatedTasks = (ev.postEventTasks || []).filter((t) => t.id !== taskId);
+      const updated = prev.map((e) =>
+        e.id === eventId ? { ...e, postEventTasks: updatedTasks } : e
+      );
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      api.events
+        .update(eventId, { post_event_checklist_json: JSON.stringify(updatedTasks) })
+        .catch(() => {});
+      return updated;
+    });
+  };
+
+  const resetPostEventTasks = (eventId: string) => {
+    setEvents((prev) => {
+      const updated = prev.map((e) =>
+        e.id === eventId ? { ...e, postEventTasks: [] } : e
+      );
+      try {
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+      } catch (err) {}
+      api.events
+        .update(eventId, { post_event_checklist_json: JSON.stringify([]) })
+        .catch(() => {});
+      return updated;
+    });
   };
 
   const logEventExpense = (
@@ -1241,11 +1438,19 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         deleteEvent,
         toggleReadinessItem,
         addReadinessItem,
+        deleteReadinessItem,
         addMenuCourseItem,
         removeMenuCourseItem,
         allocateStockToEvent,
         removeStockFromEvent,
         logEventExpense,
+        assignStaffToEvent,
+        removeStaffFromEvent,
+        updateVehicleDetails,
+        togglePostEventTask,
+        addPostEventTask,
+        deletePostEventTask,
+        resetPostEventTasks,
         addStockItem,
         updateStockItem,
         deleteStockItem,

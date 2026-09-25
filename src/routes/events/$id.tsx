@@ -50,8 +50,16 @@ import {
   Sparkles,
   Printer,
   Edit2,
+  Truck,
+  Phone,
+  ClipboardCheck,
+  ShieldCheck,
+  CheckCheck,
+  Star,
+  Receipt,
+  RotateCcw,
 } from "lucide-react";
-import { Quotation, QuotationLineItem } from "../../lib/types";
+import { Quotation, QuotationLineItem, PostEventTask } from "../../lib/types";
 
 export const Route = createFileRoute("/events/$id")({
   component: EventWorkspacePage,
@@ -67,11 +75,19 @@ function EventWorkspacePage() {
     updateEvent,
     toggleReadinessItem,
     addReadinessItem,
+    deleteReadinessItem,
     addMenuCourseItem,
     removeMenuCourseItem,
     allocateStockToEvent,
     removeStockFromEvent,
     logEventExpense,
+    assignStaffToEvent,
+    removeStaffFromEvent,
+    updateVehicleDetails,
+    togglePostEventTask,
+    addPostEventTask,
+    deletePostEventTask,
+    resetPostEventTasks,
     createQuotation,
   } = useOperations();
 
@@ -96,6 +112,178 @@ function EventWorkspacePage() {
   const [expDesc, setExpDesc] = useState("");
   const [expAmount, setExpAmount] = useState(0);
   const [expPaidTo, setExpPaidTo] = useState("");
+
+  // Staff modal state
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [staffName, setStaffName] = useState("");
+  const [staffRole, setStaffRole] = useState("Executive Head Chef");
+  const [staffPhone, setStaffPhone] = useState("");
+  const [staffNotes, setStaffNotes] = useState("");
+
+  // Logistics & Dispatch modal state
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
+  const [departureTime, setDepartureTime] = useState("");
+  const [vehicleNotes, setVehicleNotes] = useState("");
+
+  // Post-Event Wrap-up state
+  const [postEventModalOpen, setPostEventModalOpen] = useState(false);
+  const [newPostTaskTitle, setNewPostTaskTitle] = useState("");
+  const [newPostTaskCategory, setNewPostTaskCategory] = useState<PostEventTask["category"]>("equipment");
+  const [newPostTaskAssigned, setNewPostTaskAssigned] = useState("");
+  const [newPostTaskNotes, setNewPostTaskNotes] = useState("");
+  const [postTaskFilter, setPostTaskFilter] = useState<string>("all");
+
+  const DEFAULT_POST_EVENT_TASKS: Omit<PostEventTask, "id">[] = [
+    {
+      category: "equipment",
+      title: "Verify all chafing units, live burners & serving ware loaded into return van",
+      completed: false,
+      assignedTo: "Logistics Driver / Lead Steward",
+      notes: "Cross-check count against warehouse dispatch sheet",
+    },
+    {
+      category: "equipment",
+      title: "Inspect returned chinaware, cutlery & glassware for breakages or shortages",
+      completed: false,
+      assignedTo: "Warehouse Stores Manager",
+      notes: "Log any damaged items to stock inventory",
+    },
+    {
+      category: "handover",
+      title: "Package & label leftover food & desserts for client family handover",
+      completed: false,
+      assignedTo: "Banquet Captain / Head Chef",
+      notes: "Thermal packaging with food safety advisory",
+    },
+    {
+      category: "hygiene",
+      title: "Complete kitchen & buffet stall cleaning with hall manager sign-off",
+      completed: false,
+      assignedTo: "Service Stewards",
+      notes: "Leave venue pantry in spotless condition",
+    },
+    {
+      category: "finance",
+      title: "Collect remaining pending balance from client & issue settlement receipt",
+      completed: false,
+      assignedTo: "Event Operations Manager",
+      notes: "Verify via Bank Transfer, Cash, or UPI",
+    },
+    {
+      category: "finance",
+      title: "Disburse daily allowances & wages to service stewards and drivers",
+      completed: false,
+      assignedTo: "Accounts / Captain",
+      notes: "Record in Money & Expenses ledger",
+    },
+    {
+      category: "finance",
+      title: "Reconcile emergency transport & grocery receipts into expense ledger",
+      completed: false,
+      assignedTo: "Accounts In-charge",
+      notes: "Ensure all bills have tax receipts",
+    },
+    {
+      category: "feedback",
+      title: "Send official thank-you note & review request to client via WhatsApp",
+      completed: false,
+      assignedTo: "Client Relations",
+      notes: "Request Google / Social media review",
+    },
+    {
+      category: "feedback",
+      title: "Conduct culinary & hospitality debrief with Executive Head Chef",
+      completed: false,
+      assignedTo: "Executive Head Chef & Management",
+      notes: "Review portion estimates vs actual consumption",
+    },
+  ];
+
+  const handleAddPostTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event || !newPostTaskTitle.trim()) return;
+    addPostEventTask(event.id, {
+      title: newPostTaskTitle.trim(),
+      category: newPostTaskCategory,
+      completed: false,
+      assignedTo: newPostTaskAssigned.trim() || undefined,
+      notes: newPostTaskNotes.trim() || undefined,
+    });
+    setNewPostTaskTitle("");
+    setNewPostTaskAssigned("");
+    setNewPostTaskNotes("");
+    setPostEventModalOpen(false);
+    toast.success("Wrap-up task added to checklist!");
+  };
+
+  const handleLoadDefaultPostTasks = () => {
+    if (!event) return;
+    for (const t of DEFAULT_POST_EVENT_TASKS) {
+      addPostEventTask(event.id, t);
+    }
+    toast.success("Standard post-event wrap-up checklist loaded!", {
+      description: "Added 9 operational closure and audit checkpoints.",
+    });
+  };
+
+  const handleSettleFullBalance = () => {
+    if (!event) return;
+    updateEvent(event.id, { advancePaid: event.budget });
+    toast.success("Balance marked as fully collected & settled!");
+  };
+
+  const handleToggleEventCompletion = () => {
+    if (!event) return;
+    const newStatus = event.status === "completed" ? "planning" : "completed";
+    updateEvent(event.id, { status: newStatus });
+    if (newStatus === "completed") {
+      toast.success("🎉 Banquet officially marked as Completed!");
+    } else {
+      toast.info("Event status marked as active / in-progress");
+    }
+  };
+
+  const openVehicleModal = () => {
+    setVehicleNumber(event?.vehicleDetails?.vehicleNumber || "");
+    setDriverName(event?.vehicleDetails?.driverName || "");
+    setDriverPhone(event?.vehicleDetails?.driverPhone || "");
+    setDepartureTime(event?.vehicleDetails?.departureTime || "");
+    setVehicleNotes(event?.vehicleDetails?.notes || "");
+    setVehicleModalOpen(true);
+  };
+
+  const handleSaveVehicleDetails = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event) return;
+    updateVehicleDetails(event.id, {
+      vehicleNumber: vehicleNumber.trim() || "KL-55-AB-9847",
+      driverName: driverName.trim() || "Shamsudheen K.",
+      driverPhone: driverPhone.trim() || "+91 98470 54321",
+      departureTime: departureTime.trim() || "03:30 PM",
+      notes: vehicleNotes.trim(),
+    });
+    setVehicleModalOpen(false);
+    toast.success("Logistics & Dispatch details saved!");
+  };
+
+  const handleAssignStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event || !staffName.trim()) return;
+    assignStaffToEvent(event.id, {
+      name: staffName.trim(),
+      role: staffRole,
+      phone: staffPhone.trim() || "+91 98470 00000",
+      notes: staffNotes.trim(),
+    });
+    setStaffName("");
+    setStaffPhone("");
+    setStaffNotes("");
+    setStaffModalOpen(false);
+    toast.success(`Assigned ${staffName} as ${staffRole}`);
+  };
 
   if (!event) {
     return (
@@ -416,6 +604,9 @@ function EventWorkspacePage() {
             <TabsTrigger value="staff" className="text-xs py-2 px-3.5 gap-1.5">
               <UserCheck className="w-3.5 h-3.5" /> Staff & Logistics
             </TabsTrigger>
+            <TabsTrigger value="postevent" className="text-xs py-2 px-3.5 gap-1.5">
+              <ClipboardCheck className="w-3.5 h-3.5 text-[#C5A059]" /> Post-Event Wrap-up
+            </TabsTrigger>
           </TabsList>
 
           {/* TAB 1: OVERVIEW & READINESS */}
@@ -438,6 +629,14 @@ function EventWorkspacePage() {
                     onToggleItem={(itemId) =>
                       toggleReadinessItem(event.id, itemId)
                     }
+                    onAddItem={(item) => {
+                      addReadinessItem(event.id, item);
+                      toast.success(`Added task: ${item.label}`);
+                    }}
+                    onDeleteItem={(itemId) => {
+                      deleteReadinessItem(event.id, itemId);
+                      toast.success("Milestone task removed");
+                    }}
                   />
                 </CardContent>
               </Card>
@@ -987,42 +1186,708 @@ function EventWorkspacePage() {
 
           {/* TAB 6: STAFF & LOGISTICS */}
           <TabsContent value="staff" className="space-y-6">
+            {/* 1. SERVICE CREW ROSTER */}
             <Card className="border-border/80 shadow-xs">
-              <CardHeader>
-                <CardTitle className="font-serif text-lg font-bold">
-                  Assigned Banquet Crew & Supervisors
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Key kitchen and hospitality personnel responsible for this
-                  function.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {event.staffAssigned.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic py-3">
-                    No dedicated staff assigned yet. Staff scheduling is
-                    conducted 48 hours prior to banquet setup.
-                  </p>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {event.staffAssigned.map((st) => (
-                    <div
-                      key={st.id}
-                      className="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-1"
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="font-serif text-lg font-bold">
+                      Service Crew Roster
+                    </CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      {event.staffAssigned.length} Crew Assigned
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs mt-1">
+                    Assign Head Chef, Captains, Stewards, and Hosting boys/girls for this banquet.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {event.staffAssigned.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        updateEvent(event.id, { staffAssigned: [] });
+                        toast.success("Staff roster cleared");
+                      }}
+                      className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-1.5"
                     >
-                      <Badge variant="outline" className="text-[10px]">
-                        {st.role}
-                      </Badge>
-                      <div className="font-bold text-sm text-foreground pt-1">
-                        {st.name}
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Clear Roster</span>
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setStaffName("");
+                      setStaffPhone("");
+                      setStaffNotes("");
+                      setStaffRole("Executive Head Chef");
+                      setStaffModalOpen(true);
+                    }}
+                    className="bg-[#C5A059] hover:bg-[#B58E45] text-white font-semibold text-xs gap-1.5 shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Assign Staff Member</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {event.staffAssigned.length === 0 ? (
+                  <div className="p-8 text-center bg-muted/10 rounded-xl border border-dashed border-border space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-[#FAF5ED] border border-[#E8DEC8] flex items-center justify-center mx-auto text-[#8C6D37]">
+                      <UserCheck className="w-6 h-6 text-[#C5A059]" />
+                    </div>
+                    <div className="max-w-md mx-auto space-y-1">
+                      <h4 className="font-semibold text-sm text-foreground">
+                        No service crew rostered yet
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Staff scheduling is conducted for kitchen leadership, service captains, buffet stewards, and guest hosts.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setStaffName("");
+                          setStaffPhone("");
+                          setStaffNotes("");
+                          setStaffRole("Executive Head Chef");
+                          setStaffModalOpen(true);
+                        }}
+                        className="bg-[#C5A059] hover:bg-[#B58E45] text-white text-xs gap-1.5 shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Assign Staff Member
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {event.staffAssigned.map((st) => {
+                      const isChef = st.role.toLowerCase().includes("chef");
+                      const isCaptain = st.role.toLowerCase().includes("captain") || st.role.toLowerCase().includes("supervisor");
+                      const isSteward = st.role.toLowerCase().includes("steward");
+                      const isHosting = st.role.toLowerCase().includes("hosting") || st.role.toLowerCase().includes("host");
+                      const isDriver = st.role.toLowerCase().includes("driver");
+
+                      let badgeColor = "bg-muted text-muted-foreground border-border";
+                      if (isChef) badgeColor = "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30";
+                      else if (isCaptain) badgeColor = "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30";
+                      else if (isSteward) badgeColor = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30";
+                      else if (isHosting) badgeColor = "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30";
+                      else if (isDriver) badgeColor = "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30";
+
+                      return (
+                        <div
+                          key={st.id}
+                          className="p-3.5 rounded-xl border border-border/70 bg-card hover:border-[#C5A059]/50 transition-all flex flex-col justify-between gap-3 shadow-2xs group"
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <Badge variant="outline" className={`text-[10px] font-semibold ${badgeColor}`}>
+                                {st.role}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeStaffFromEvent(event.id, st.id)}
+                                className="w-6 h-6 text-muted-foreground hover:text-red-500 opacity-80 group-hover:opacity-100 transition-opacity"
+                                title="Remove staff member"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                            <div className="font-bold text-sm text-foreground">
+                              {st.name}
+                            </div>
+                            {st.notes && (
+                              <div className="text-[11px] text-muted-foreground line-clamp-1 italic">
+                                {st.notes}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
+                            <a
+                              href={`tel:${st.phone.replace(/[^0-9+]/g, "")}`}
+                              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-[#C5A059] transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#C5A059]" />
+                              <span>{st.phone}</span>
+                            </a>
+                            {st.phone && (
+                              <a
+                                href={`https://wa.me/${st.phone.replace(/[^0-9]/g, "")}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-emerald-600 hover:text-emerald-700 font-medium"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 2. LOGISTICS & DISPATCH */}
+            <Card className="border-border/80 shadow-xs">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="font-serif text-lg font-bold">
+                      Logistics & Kitchen Dispatch
+                    </CardTitle>
+                    <Badge variant="outline" className="text-xs border-[#C5A059]/40 text-[#8C6D37] dark:text-[#E0BA6E]">
+                      Fleet & Transit
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs mt-1">
+                    Van registration number, driver name, driver phone number, and scheduled kitchen departure time.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {event.vehicleDetails?.vehicleNumber && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        updateVehicleDetails(event.id, {
+                          vehicleNumber: "",
+                          driverName: "",
+                          driverPhone: "",
+                          departureTime: "",
+                          notes: "",
+                        });
+                        toast.success("Logistics details reset");
+                      }}
+                      className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Clear Details</span>
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={openVehicleModal}
+                    className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs gap-1.5 shadow-xs"
+                  >
+                    <Truck className="w-4 h-4" />
+                    <span>{event.vehicleDetails?.vehicleNumber ? "Update Dispatch Details" : "Configure Dispatch"}</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {event.vehicleDetails?.vehicleNumber ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Van Number */}
+                      <div className="p-4 rounded-xl border border-border/70 bg-card space-y-1.5 shadow-2xs">
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+                          <Truck className="w-4 h-4 text-[#C5A059]" />
+                          <span>Delivery Van Registration</span>
+                        </div>
+                        <div className="font-bold text-base text-foreground font-mono">
+                          {event.vehicleDetails.vehicleNumber}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Insulated Catering Vehicle
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        📞 {st.phone}
+
+                      {/* Driver Name */}
+                      <div className="p-4 rounded-xl border border-border/70 bg-card space-y-1.5 shadow-2xs">
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+                          <UserCheck className="w-4 h-4 text-[#C5A059]" />
+                          <span>Assigned Driver</span>
+                        </div>
+                        <div className="font-bold text-base text-foreground">
+                          {event.vehicleDetails.driverName || "Driver Assigned"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Lead Transport In-charge
+                        </div>
+                      </div>
+
+                      {/* Driver Phone */}
+                      <div className="p-4 rounded-xl border border-border/70 bg-card space-y-1.5 shadow-2xs">
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+                          <Phone className="w-4 h-4 text-[#C5A059]" />
+                          <span>Driver Phone Number</span>
+                        </div>
+                        <div className="font-bold text-base text-foreground">
+                          <a
+                            href={`tel:${event.vehicleDetails.driverPhone.replace(/[^0-9+]/g, "")}`}
+                            className="hover:text-[#C5A059] transition-colors"
+                          >
+                            {event.vehicleDetails.driverPhone || "—"}
+                          </a>
+                        </div>
+                        <div className="flex items-center gap-2 pt-0.5">
+                          {event.vehicleDetails.driverPhone && (
+                            <a
+                              href={`https://wa.me/${event.vehicleDetails.driverPhone.replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[11px] text-emerald-600 hover:underline inline-flex items-center gap-1 font-medium"
+                            >
+                              <MessageCircle className="w-3 h-3" /> WhatsApp Driver
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Kitchen Departure */}
+                      <div className="p-4 rounded-xl border border-border/70 bg-card space-y-1.5 shadow-2xs">
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+                          <Clock className="w-4 h-4 text-[#C5A059]" />
+                          <span>Kitchen Departure Time</span>
+                        </div>
+                        <div className="font-bold text-base text-foreground">
+                          {event.vehicleDetails.departureTime || "03:30 PM"}
+                        </div>
+                        <div className="text-[11px] text-emerald-600 font-medium">
+                          Scheduled for Venue Transit
+                        </div>
                       </div>
                     </div>
-                  ))}
+
+                    {event.vehicleDetails.notes && (
+                      <div className="p-3.5 rounded-lg bg-muted/30 border border-border/60 text-xs text-muted-foreground flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-foreground">Transit & Gate Instructions: </strong>
+                          {event.vehicleDetails.notes}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center bg-muted/10 rounded-xl border border-dashed border-border space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-[#FAF5ED] border border-[#E8DEC8] flex items-center justify-center mx-auto text-[#8C6D37]">
+                      <Truck className="w-6 h-6 text-[#C5A059]" />
+                    </div>
+                    <div className="max-w-md mx-auto space-y-1">
+                      <h4 className="font-semibold text-sm text-foreground">
+                        No delivery van or driver assigned yet
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Schedule kitchen loading, driver contact, and banquet venue arrival time for seamless hot buffet execution.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        onClick={openVehicleModal}
+                        className="bg-[#C5A059] hover:bg-[#B58E45] text-white text-xs gap-1.5 shadow-xs"
+                      >
+                        <Truck className="w-3.5 h-3.5" /> Configure Van & Driver
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 7: POST-EVENT WRAP-UP & AUDIT */}
+          <TabsContent value="postevent" className="space-y-6">
+            {/* 1. HERO BANNER */}
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-[#17181C] via-[#1E2026] to-[#121316] text-[#FDFBF7] border border-[#C5A059]/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-[#C5A059]/15 text-[#E0BA6E] border-[#C5A059]/40 text-[10px] font-bold tracking-widest uppercase">
+                    Banquet Closure & Settlement
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    • Event #{event.id.slice(0, 8)}
+                  </span>
                 </div>
+                <h2 className="font-serif text-2xl font-bold tracking-tight text-[#FDFBF7] flex items-center gap-2.5">
+                  <ClipboardCheck className="w-6 h-6 text-[#C5A059]" />
+                  <span>Post-Event Wrap-up & Audit</span>
+                </h2>
+                <p className="text-xs text-[#A1A5B0] max-w-2xl leading-relaxed">
+                  Post-banquet operational handover: Return warehouse equipment & chafing units, package surplus food for client, settle service crew daily wages, collect final balance, and record client review.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <Button
+                  onClick={handleToggleEventCompletion}
+                  className={`text-xs font-semibold gap-1.5 shadow-md ${
+                    event.status === "completed"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-[#C5A059] hover:bg-[#B58E45] text-white"
+                  }`}
+                >
+                  <CheckCheck className="w-4 h-4" />
+                  <span>
+                    {event.status === "completed"
+                      ? "Banquet Completed (Reopen)"
+                      : "Mark Banquet as Completed"}
+                  </span>
+                </Button>
+              </div>
+            </div>
+
+            {/* 2. THREE KEY KPI SUMMARY CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Milestone Progress */}
+              {(() => {
+                const tasks = event.postEventTasks || [];
+                const completedTasks = tasks.filter((t) => t.completed).length;
+                const totalTasks = tasks.length;
+                const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                return (
+                  <Card className="border-border/80 shadow-xs p-4 flex flex-col justify-between gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground uppercase font-semibold">
+                        Wrap-up Milestones
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={pct === 100 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 border-emerald-300" : "bg-muted text-muted-foreground"}
+                      >
+                        {pct}% Done
+                      </Badge>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold font-serif text-foreground">
+                        {completedTasks} / {totalTasks}{" "}
+                        <span className="text-xs font-normal text-muted-foreground">verified</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-2">
+                        <div
+                          className={`h-full transition-all duration-300 ${pct === 100 ? "bg-emerald-500" : "bg-[#C5A059]"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })()}
+
+              {/* Client Balance Settlement */}
+              <Card className="border-border/80 shadow-xs p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">
+                    Client Balance Settlement
+                  </span>
+                  {balancePending === 0 ? (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 border-emerald-300 font-semibold text-[10px]">
+                      Fully Paid
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-950/40 border-amber-300 font-semibold text-[10px]">
+                      Pending Collection
+                    </Badge>
+                  )}
+                </div>
+                <div>
+                  <div className="text-2xl font-bold font-serif text-foreground">
+                    ₹{balancePending.toLocaleString()}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      / ₹{event.budget.toLocaleString()}
+                    </span>
+                  </div>
+                  {balancePending > 0 ? (
+                    <button
+                      type="button"
+                      onClick={handleSettleFullBalance}
+                      className="text-xs text-[#8C6D37] dark:text-[#E0BA6E] hover:underline font-semibold mt-1 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Receipt className="w-3 h-3" /> Mark Balance as Received (₹{balancePending.toLocaleString()})
+                    </button>
+                  ) : (
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                      ✓ Advance & Balance 100% reconciled
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Client WhatsApp Thank-You & Review */}
+              <Card className="border-border/80 shadow-xs p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">
+                    Client Relations
+                  </span>
+                  <Badge variant="outline" className="text-[10px] border-[#C5A059]/40 text-[#8C6D37]">
+                    VIP Courtesy
+                  </Badge>
+                </div>
+                <div className="space-y-1.5">
+                  <a
+                    href={`https://wa.me/${event.clientPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                      `Dear ${event.clientName},\n\nThank you for choosing ROLEX Events & Caterers for "${event.title}". It was our absolute privilege to serve you and your guests.\n\nWe hope everyone enjoyed the royal culinary feast and banquet hospitality. Please share your valuable feedback with us!\n\nWarm regards,\nROLEX Events & Caterers Team`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors shadow-2xs"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp Thank-You & Review</span>
+                  </a>
+                  <div className="text-[11px] text-muted-foreground text-center line-clamp-1">
+                    Direct message to {event.clientName} ({event.clientPhone})
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* 3. WRAP-UP & AUDIT CHECKLIST CARD */}
+            <Card className="border-border/80 shadow-xs">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="font-serif text-lg font-bold">
+                      Operations Closure Checklist
+                    </CardTitle>
+                    <Badge variant="secondary" className="text-xs font-semibold">
+                      {(event.postEventTasks || []).length} Milestones
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs mt-1">
+                    Inspection tasks across equipment return, leftover food handover, staff wage payout, and kitchen hygiene.
+                  </CardDescription>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {(!event.postEventTasks || event.postEventTasks.length === 0) ? (
+                    <Button
+                      size="sm"
+                      onClick={handleLoadDefaultPostTasks}
+                      className="bg-[#C5A059] hover:bg-[#B58E45] text-white font-semibold text-xs gap-1.5 shadow-xs"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Load Standard Wrap-up Checklist</span>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          resetPostEventTasks(event.id);
+                          toast.success("Wrap-up tasks reset");
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Clear All</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleLoadDefaultPostTasks}
+                        className="text-xs border-[#C5A059]/50 text-[#8C6D37] hover:bg-[#FAF5ED] gap-1"
+                      >
+                        <RotateCcw className="w-3 h-3 text-[#C5A059]" />
+                        <span>Re-load Standard Tasks</span>
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setNewPostTaskTitle("");
+                      setNewPostTaskAssigned("");
+                      setNewPostTaskNotes("");
+                      setNewPostTaskCategory("equipment");
+                      setPostEventModalOpen(true);
+                    }}
+                    className="bg-black dark:bg-[#C5A059] text-white dark:text-black font-semibold text-xs gap-1.5 shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Custom Wrap-up Task</span>
+                  </Button>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {/* Filter tabs */}
+                {(event.postEventTasks && event.postEventTasks.length > 0) && (
+                  <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-border/40 text-xs">
+                    {[
+                      { id: "all", label: "All Tasks" },
+                      { id: "equipment", label: "Equipment Return" },
+                      { id: "handover", label: "Food Handover" },
+                      { id: "finance", label: "Finance & Wages" },
+                      { id: "hygiene", label: "Venue Hygiene" },
+                      { id: "feedback", label: "Review & Debrief" },
+                    ].map((tab) => {
+                      const count = tab.id === "all"
+                        ? event.postEventTasks?.length || 0
+                        : (event.postEventTasks || []).filter((t) => t.category === tab.id).length;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setPostTaskFilter(tab.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                            postTaskFilter === tab.id
+                              ? "bg-black dark:bg-[#C5A059] text-white dark:text-black shadow-2xs"
+                              : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          <span className="text-[10px] opacity-70">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Tasks List */}
+                {(!event.postEventTasks || event.postEventTasks.length === 0) ? (
+                  <div className="p-8 sm:p-12 text-center bg-muted/10 rounded-2xl border border-dashed border-[#C5A059]/50 space-y-4">
+                    <div className="w-14 h-14 rounded-full bg-[#FAF5ED] border border-[#E8DEC8] flex items-center justify-center mx-auto text-[#8C6D37]">
+                      <ClipboardCheck className="w-7 h-7 text-[#C5A059]" />
+                    </div>
+                    <div className="max-w-md mx-auto space-y-1">
+                      <h3 className="font-serif text-lg font-bold text-foreground">
+                        Post-Event Wrap-up & Audit Checklist
+                      </h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Track returned chafing dishes, handover leftover food to client, settle staff allowances, collect pending balance, and record client review.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                      <Button
+                        onClick={handleLoadDefaultPostTasks}
+                        className="bg-[#C5A059] hover:bg-[#B58E45] text-white font-semibold text-xs px-5 py-2.5 h-auto gap-2 shadow-xs cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Load Standard 9-Point Wrap-up Checklist</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setNewPostTaskTitle("");
+                          setNewPostTaskAssigned("");
+                          setNewPostTaskNotes("");
+                          setNewPostTaskCategory("equipment");
+                          setPostEventModalOpen(true);
+                        }}
+                        className="text-xs h-auto py-2.5 border-border gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Custom Task</span>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {event.postEventTasks
+                      .filter((t) => postTaskFilter === "all" || t.category === postTaskFilter)
+                      .map((task) => {
+                        const isEq = task.category === "equipment";
+                        const isHand = task.category === "handover";
+                        const isFin = task.category === "finance";
+                        const isHyg = task.category === "hygiene";
+                        const isFeed = task.category === "feedback";
+
+                        let catColor = "bg-muted text-muted-foreground border-border";
+                        let catIcon = <ClipboardCheck className="w-3.5 h-3.5" />;
+                        let catLabel = "General";
+
+                        if (isEq) {
+                          catColor = "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30";
+                          catIcon = <Boxes className="w-3.5 h-3.5 text-purple-600" />;
+                          catLabel = "Equipment Return";
+                        } else if (isHand) {
+                          catColor = "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30";
+                          catIcon = <ChefHat className="w-3.5 h-3.5 text-amber-600" />;
+                          catLabel = "Food Handover";
+                        } else if (isFin) {
+                          catColor = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30";
+                          catIcon = <DollarSign className="w-3.5 h-3.5 text-emerald-600" />;
+                          catLabel = "Finance & Wages";
+                        } else if (isHyg) {
+                          catColor = "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30";
+                          catIcon = <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />;
+                          catLabel = "Venue Hygiene";
+                        } else if (isFeed) {
+                          catColor = "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30";
+                          catIcon = <Star className="w-3.5 h-3.5 text-orange-600" />;
+                          catLabel = "Client Review";
+                        }
+
+                        return (
+                          <div
+                            key={task.id}
+                            onClick={() => togglePostEventTask(event.id, task.id)}
+                            className={`group flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer ${
+                              task.completed
+                                ? "bg-muted/30 border-border/50 text-muted-foreground"
+                                : "bg-card border-border/80 text-foreground hover:border-[#C5A059]/50 shadow-2xs"
+                            }`}
+                          >
+                            <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={task.completed}
+                                onChange={() => togglePostEventTask(event.id, task.id)}
+                                className="w-4 h-4 rounded border-border text-[#C5A059] focus:ring-[#C5A059] cursor-pointer"
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold leading-tight ${task.completed ? "line-through opacity-70" : ""}`}>
+                                  {task.title}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                                {task.assignedTo && (
+                                  <span className="flex items-center gap-1 font-medium text-foreground">
+                                    <UserCheck className="w-3 h-3 text-[#C5A059]" />
+                                    <span>{task.assignedTo}</span>
+                                  </span>
+                                )}
+                                {task.notes && (
+                                  <span className="italic line-clamp-1">
+                                    • {task.notes}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <Badge variant="outline" className={`text-[10px] font-semibold flex items-center gap-1 ${catColor}`}>
+                                {catIcon}
+                                <span>{catLabel}</span>
+                              </Badge>
+
+                              {task.completed && (
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 border-emerald-300 text-[10px] font-semibold gap-1">
+                                  <CheckCheck className="w-3 h-3" /> Done
+                                </Badge>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deletePostEventTask(event.id, task.id)}
+                                className="w-7 h-7 text-muted-foreground hover:text-red-500 opacity-60 group-hover:opacity-100 transition-opacity"
+                                title="Delete task"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1248,6 +2113,276 @@ function EventWorkspacePage() {
         onOpenChange={setQuotationPreviewOpen}
         onEdit={(quotId) => router.navigate({ href: `/quotations?action=create&id=${quotId}` })}
       />
+
+      {/* MODAL 4: ASSIGN STAFF MEMBER */}
+      <Dialog open={staffModalOpen} onOpenChange={setStaffModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-lg font-bold flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-[#C5A059]" />
+              <span>Assign Staff Member to Banquet</span>
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAssignStaff} className="space-y-3.5 pt-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Staff Role / Assignment *</Label>
+              <Select value={staffRole} onValueChange={setStaffRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Executive Head Chef">Executive Head Chef</SelectItem>
+                  <SelectItem value="Sous Chef">Sous Chef</SelectItem>
+                  <SelectItem value="Banquet Captain">Banquet Captain</SelectItem>
+                  <SelectItem value="Floor Supervisor">Floor Supervisor</SelectItem>
+                  <SelectItem value="Head Steward">Head Steward</SelectItem>
+                  <SelectItem value="Service Steward">Service Steward</SelectItem>
+                  <SelectItem value="Hosting Boy">Hosting Boy</SelectItem>
+                  <SelectItem value="Hosting Girl">Hosting Girl</SelectItem>
+                  <SelectItem value="Logistics Driver">Logistics Driver</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="staffName" className="text-xs font-semibold">
+                Staff Full Name *
+              </Label>
+              <Input
+                id="staffName"
+                value={staffName}
+                onChange={(e) => setStaffName(e.target.value)}
+                placeholder="e.g. Faizal K."
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="staffPhone" className="text-xs font-semibold">
+                Mobile Contact Number *
+              </Label>
+              <Input
+                id="staffPhone"
+                value={staffPhone}
+                onChange={(e) => setStaffPhone(e.target.value)}
+                placeholder="e.g. +91 98470 33445"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="staffNotes" className="text-xs font-semibold">
+                Duty Station / Assignment Notes (Optional)
+              </Label>
+              <Input
+                id="staffNotes"
+                value={staffNotes}
+                onChange={(e) => setStaffNotes(e.target.value)}
+                placeholder="e.g. In-charge of VIP buffet counters & dessert bar"
+              />
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStaffModalOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-[#C5A059] hover:bg-[#B58E45] text-white text-xs font-semibold shadow-xs"
+              >
+                Assign Staff Member
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL 5: LOGISTICS & DISPATCH CONFIGURATION */}
+      <Dialog open={vehicleModalOpen} onOpenChange={setVehicleModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-lg font-bold flex items-center gap-2">
+              <Truck className="w-5 h-5 text-[#C5A059]" />
+              <span>Configure Logistics & Kitchen Dispatch</span>
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveVehicleDetails} className="space-y-3.5 pt-2">
+            <div className="space-y-1">
+              <Label htmlFor="vehicleNumber" className="text-xs font-semibold">
+                Delivery Van Registration Number *
+              </Label>
+              <Input
+                id="vehicleNumber"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value)}
+                placeholder="e.g. KL-55-AB-9847 (Rolex Food Van #1)"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="driverName" className="text-xs font-semibold">
+                  Driver Name *
+                </Label>
+                <Input
+                  id="driverName"
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value)}
+                  placeholder="e.g. Shamsudheen K."
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="driverPhone" className="text-xs font-semibold">
+                  Driver Phone Number *
+                </Label>
+                <Input
+                  id="driverPhone"
+                  value={driverPhone}
+                  onChange={(e) => setDriverPhone(e.target.value)}
+                  placeholder="e.g. +91 98470 54321"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="departureTime" className="text-xs font-semibold">
+                Scheduled Kitchen Departure Time *
+              </Label>
+              <Input
+                id="departureTime"
+                value={departureTime}
+                onChange={(e) => setDepartureTime(e.target.value)}
+                placeholder="e.g. 03:30 PM (2.5 hrs before banquet)"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="vehicleNotes" className="text-xs font-semibold">
+                Transit, Loading & Gate Notes (Optional)
+              </Label>
+              <Input
+                id="vehicleNotes"
+                value={vehicleNotes}
+                onChange={(e) => setVehicleNotes(e.target.value)}
+                placeholder="e.g. Rear loading dock entrance, insulated containers inspected"
+              />
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVehicleModalOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-[#C5A059] hover:bg-[#B58E45] text-white text-xs font-semibold shadow-xs"
+              >
+                Save Dispatch Details
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL 6: ADD POST-EVENT WRAP-UP TASK */}
+      <Dialog open={postEventModalOpen} onOpenChange={setPostEventModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-lg font-bold flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5 text-[#C5A059]" />
+              <span>Add Post-Event Wrap-up Task</span>
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddPostTask} className="space-y-3.5 pt-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Audit Category *</Label>
+              <Select
+                value={newPostTaskCategory}
+                onValueChange={(val: any) => setNewPostTaskCategory(val)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equipment">📦 Equipment & Ware Return</SelectItem>
+                  <SelectItem value="handover">🍱 Leftover Food Handover</SelectItem>
+                  <SelectItem value="finance">💰 Balance & Wages Settlement</SelectItem>
+                  <SelectItem value="hygiene">🛡️ Kitchen & Venue Hygiene</SelectItem>
+                  <SelectItem value="feedback">⭐ Client Review & Chef Debrief</SelectItem>
+                  <SelectItem value="custom">📋 Custom Post-Event Task</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="postTaskTitle" className="text-xs font-semibold">
+                Task / Milestone Title *
+              </Label>
+              <Input
+                id="postTaskTitle"
+                value={newPostTaskTitle}
+                onChange={(e) => setNewPostTaskTitle(e.target.value)}
+                placeholder="e.g. Return cold room keys to Bianco Castle manager"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="postTaskAssigned" className="text-xs font-semibold">
+                Assigned Team Member (Optional)
+              </Label>
+              <Input
+                id="postTaskAssigned"
+                value={newPostTaskAssigned}
+                onChange={(e) => setNewPostTaskAssigned(e.target.value)}
+                placeholder="e.g. Faizal K. (Captain) / Driver Usman"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="postTaskNotes" className="text-xs font-semibold">
+                Audit Notes / Instructions (Optional)
+              </Label>
+              <Input
+                id="postTaskNotes"
+                value={newPostTaskNotes}
+                onChange={(e) => setNewPostTaskNotes(e.target.value)}
+                placeholder="e.g. Signed acknowledgment required from venue manager"
+              />
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPostEventModalOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-[#C5A059] hover:bg-[#B58E45] text-white text-xs font-semibold shadow-xs"
+              >
+                Add Wrap-up Task
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

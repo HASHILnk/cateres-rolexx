@@ -157,6 +157,10 @@ export const api = {
       request<any>(`/api/events/${eventId}/readiness/${itemId}/toggle`, {
         method: "PUT",
       }),
+    deleteReadiness: (eventId: string, itemId: string) =>
+      request<{ message: string }>(`/api/events/${eventId}/readiness/${itemId}`, {
+        method: "DELETE",
+      }),
 
     // Menu course items
     addMenuCourse: (eventId: string, data: any) =>

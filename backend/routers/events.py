@@ -193,6 +193,26 @@ def toggle_readiness_item(
     return item
 
 
+@router.delete("/{event_id}/readiness/{item_id}")
+def delete_readiness_item(
+    event_id: str,
+    item_id: str,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin),
+):
+    item = (
+        db.query(ReadinessItem)
+        .filter(ReadinessItem.id == item_id, ReadinessItem.event_id == event_id)
+        .first()
+    )
+    if not item:
+        item = db.query(ReadinessItem).filter(ReadinessItem.id == item_id).first()
+    if item:
+        db.delete(item)
+        db.commit()
+    return {"message": "Readiness item deleted"}
+
+
 # ==================================================
 # MENU ITEMS
 # ==================================================

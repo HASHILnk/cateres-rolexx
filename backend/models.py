@@ -66,6 +66,9 @@ class CateringEvent(Base):
     quotation_id = Column(String(50), nullable=True)
     menu_courses_json = Column(Text, nullable=True)
     stock_allocations_json = Column(Text, nullable=True)
+    staff_assigned_json = Column(Text, nullable=True)
+    vehicle_details_json = Column(Text, nullable=True)
+    post_event_checklist_json = Column(Text, nullable=True)
     special_instructions = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -59,13 +59,18 @@ export interface StaffAssignment {
   id: string;
   name: string;
   role:
-    | "Lead Chef"
+    | "Executive Head Chef"
     | "Sous Chef"
-    | "Banquet Manager"
+    | "Banquet Captain"
     | "Floor Supervisor"
-    | "Server Team Lead"
-    | "Logistics Driver";
+    | "Head Steward"
+    | "Service Steward"
+    | "Hosting Boy"
+    | "Hosting Girl"
+    | "Logistics Driver"
+    | string;
   phone: string;
+  notes?: string;
 }
 
 export interface QuotationLineItem {
@@ -146,8 +151,19 @@ export interface CateringEvent {
     driverPhone: string;
     departureTime: string;
   } | undefined;
+  postEventTasks?: PostEventTask[] | undefined;
   specialInstructions?: string | undefined;
   createdAt: string;
+}
+
+export interface PostEventTask {
+  id: string;
+  category: "equipment" | "handover" | "finance" | "feedback" | "hygiene" | "custom";
+  title: string;
+  completed: boolean;
+  assignedTo?: string;
+  notes?: string;
+  completedAt?: string;
 }
 
 export type StockCategory =

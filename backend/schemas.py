@@ -179,6 +179,9 @@ class CateringEventBase(BaseModel):
     quotation_id: Optional[str] = None
     menu_courses_json: Optional[str] = None
     stock_allocations_json: Optional[str] = None
+    staff_assigned_json: Optional[str] = None
+    vehicle_details_json: Optional[str] = None
+    post_event_checklist_json: Optional[str] = None
     special_instructions: Optional[str] = None
 
 
@@ -203,6 +206,9 @@ class CateringEventUpdate(BaseModel):
     quotation_id: Optional[str] = None
     menu_courses_json: Optional[str] = None
     stock_allocations_json: Optional[str] = None
+    staff_assigned_json: Optional[str] = None
+    vehicle_details_json: Optional[str] = None
+    post_event_checklist_json: Optional[str] = None
     special_instructions: Optional[str] = None
 
 
